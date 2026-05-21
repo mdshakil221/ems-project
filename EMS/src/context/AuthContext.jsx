@@ -1,14 +1,34 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import API from "../api/axios";
 import toast from "react-hot-toast";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("ems_user")) || null
-  );
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true); // ✅ token check হচ্ছে কিনা
+
+  // ✅ App start হলে token verify করুন
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("ems_user"));
+    if (stored?.token) {
+      API.get("/auth/profile")
+        .then(({ data }) => {
+          setUser({ ...stored, ...data });
+        })
+        .catch(() => {
+          // Token invalid হলে logout করুন
+          localStorage.removeItem("ems_user");
+          setUser(null);
+        })
+        .finally(() => {
+          setChecking(false);
+        });
+    } else {
+      setChecking(false);
+    }
+  }, []);
 
   const login = async (email, password, role) => {
     try {
@@ -36,6 +56,24 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("ems_user", JSON.stringify(updated));
     setUser(updated);
   };
+
+  // ✅ Token check শেষ না হলে loading দেখান
+  if (checking) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#0f172a"
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <h2 style={{ color: "#6366f1", fontSize: "24px" }}>EMS</h2>
+          <p style={{ color: "#94a3b8", marginTop: "8px" }}>লোড হচ্ছে...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
