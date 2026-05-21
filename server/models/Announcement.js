@@ -1,0 +1,20 @@
+import mongoose from "mongoose";
+
+const announcementSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  priority: {
+    type: String,
+    enum: ["low", "medium", "high", "urgent"],
+    default: "medium"
+  },
+  targetRole: {
+    type: String,
+    enum: ["all", "employee", "admin"],
+    default: "all"
+  },
+  createdBy: { type: String, required: true },
+  readBy: [{ type: String }], // email list
+}, { timestamps: true });
+
+export default mongoose.model("Announcement", announcementSchema);

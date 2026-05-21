@@ -1,0 +1,5 @@
+EMS/node_modules/
+server/node_modules/
+server/uploads/
+EMS/.env
+server/.env
