@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ App start হলে token verify করুন
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("ems_user"));
+    const stored = JSON.parse(sessionStorage.getItem("ems_user"));
     if (stored?.token) {
       API.get("/auth/profile")
         .then(({ data }) => {
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
         })
         .catch(() => {
           // Token invalid হলে logout করুন
-          localStorage.removeItem("ems_user");
+          sessionStorage.removeItem("ems_user");
           setUser(null);
         })
         .finally(() => {
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const { data } = await API.post("/auth/login", { email, password, role });
-      localStorage.setItem("ems_user", JSON.stringify(data));
+      sessionStorage.setItem("ems_user", JSON.stringify(data));
       setUser(data);
       toast.success("Login সফল হয়েছে!");
       return data;
@@ -47,13 +47,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("ems_user");
+    sessionStorage.removeItem("ems_user");
     setUser(null);
   };
 
   const updateUser = (newData) => {
     const updated = { ...user, ...newData };
-    localStorage.setItem("ems_user", JSON.stringify(updated));
+    sessionStorage.setItem("ems_user", JSON.stringify(updated));
     setUser(updated);
   };
 
