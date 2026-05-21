@@ -263,7 +263,7 @@ export default function EmployeesPage() {
                       }}>
                         {userAccount?.profileImage ? (
                           <img
-                            src={`http://localhost:5000/uploads/profiles/${userAccount.profileImage}`}
+                            src={userAccount.profileImage}
                             alt={emp.name}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
@@ -507,7 +507,7 @@ export default function EmployeesPage() {
                   }}>
                     {selectedProfile.profileImage ? (
                       <img
-                        src={`http://localhost:5000/uploads/profiles/${selectedProfile.profileImage}`}
+                        src={selectedProfile.profileImage}
                         alt={selectedProfile.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />

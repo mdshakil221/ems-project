@@ -10,7 +10,7 @@ export default function ProfileSection({ user }) {
   const [editing, setEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(
     user?.profileImage
-      ? `http://localhost:5000/uploads/profiles/${user.profileImage}`
+      ? user.profileImage
       : null
   );
   const [form, setForm] = useState({
@@ -32,7 +32,7 @@ export default function ProfileSection({ user }) {
       const { data } = await API.post("/auth/profile/image", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      setProfileImage(`http://localhost:5000/uploads/profiles/${data.profileImage}`);
+      setProfileImage(data.profileImage);
       toast.success("Profile ছবি আপডেট হয়েছে!");
     } catch (error) {
       toast.error("ছবি আপলোড ব্যর্থ!");
