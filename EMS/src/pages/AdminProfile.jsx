@@ -5,15 +5,11 @@ import { MdCamera, MdEdit, MdSave, MdLock } from "react-icons/md";
 import toast from "react-hot-toast";
 
 export default function AdminProfile() {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  const [profileImage, setProfileImage] = useState(
-    user?.profileImage
-      ? `http://localhost:5000/uploads/profiles/${user.profileImage}`
-      : null
-  );
+  const [profileImage, setProfileImage] = useState(user?.profileImage || null);
   const [form, setForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -35,7 +31,9 @@ export default function AdminProfile() {
       const { data } = await API.post("/auth/profile/image", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      setProfileImage(`http://localhost:5000/uploads/profiles/${data.profileImage}`);
+      // ✅ Cloudinary URL সরাসরি
+      setProfileImage(data.profileImage);
+      updateUser({ profileImage: data.profileImage });
       toast.success("Profile ছবি আপডেট হয়েছে!");
     } catch (error) {
       toast.error("ছবি আপলোড ব্যর্থ!");
@@ -46,7 +44,8 @@ export default function AdminProfile() {
 
   const handleUpdateProfile = async () => {
     try {
-      await API.put("/auth/profile", form);
+      const { data } = await API.put("/auth/profile", form);
+      updateUser(data);
       toast.success("Profile আপডেট হয়েছে!");
       setEditing(false);
     } catch (error) {

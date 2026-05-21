@@ -6,7 +6,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(
-    JSON.parse(sessionStorage.getItem("ems_user")) || null
+    JSON.parse(localStorage.getItem("ems_user")) || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -14,8 +14,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const { data } = await API.post("/auth/login", { email, password, role });
-      // localStorage এর বদলে sessionStorage
-      sessionStorage.setItem("ems_user", JSON.stringify(data));
+      localStorage.setItem("ems_user", JSON.stringify(data));
       setUser(data);
       toast.success("Login সফল হয়েছে!");
       return data;
@@ -28,12 +27,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    sessionStorage.removeItem("ems_user");
+    localStorage.removeItem("ems_user");
     setUser(null);
   };
 
+  const updateUser = (newData) => {
+    const updated = { ...user, ...newData };
+    localStorage.setItem("ems_user", JSON.stringify(updated));
+    setUser(updated);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

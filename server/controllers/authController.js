@@ -79,15 +79,20 @@ export const uploadProfileImage = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "ব্যবহারকারী পাওয়া যায়নি!" });
     }
+
+    // ✅ আগের Cloudinary image delete করুন
     if (user.profileImage) {
-      const oldPath = `uploads/profiles/${user.profileImage}`;
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const publicId = user.profileImage.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(`ems-profiles/${publicId}`);
     }
-    user.profileImage = req.file.filename;
+
+    // ✅ Cloudinary থেকে নতুন image URL save করুন
+    user.profileImage = req.file.path;
     await user.save();
+
     res.json({
       message: "Profile ছবি আপডেট হয়েছে!",
-      profileImage: req.file.filename
+      profileImage: req.file.path
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -197,10 +202,13 @@ export const deleteUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "ব্যবহারকারী পাওয়া যায়নি!" });
     }
+
+    // ✅ Cloudinary থেকে image delete করুন
     if (user.profileImage) {
-      const oldPath = `uploads/profiles/${user.profileImage}`;
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const publicId = user.profileImage.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(`ems-profiles/${publicId}`);
     }
+
     await user.deleteOne();
     res.json({ message: "Account মুছে ফেলা হয়েছে!" });
   } catch (error) {
