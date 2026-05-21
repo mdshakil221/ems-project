@@ -5,7 +5,8 @@ const API = axios.create({
 });
 
 API.interceptors.request.use((config) => {
-  const user = JSON.parse(sessionStorage.getItem("ems_user"));
+  // ✅ sessionStorage → localStorage
+  const user = JSON.parse(localStorage.getItem("ems_user"));
   if (user?.token) {
     config.headers.Authorization = `Bearer ${user.token}`;
   }
