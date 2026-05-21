@@ -79,20 +79,15 @@ export const uploadProfileImage = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "ব্যবহারকারী পাওয়া যায়নি!" });
     }
-
-    // ✅ আগের Cloudinary image delete করুন
     if (user.profileImage) {
-      const publicId = user.profileImage.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(`ems-profiles/${publicId}`);
+      const oldPath = `uploads/profiles/${user.profileImage}`;
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
-
-    // ✅ Cloudinary থেকে নতুন image URL save করুন
-    user.profileImage = req.file.path;
+    user.profileImage = req.file.filename;
     await user.save();
-
     res.json({
       message: "Profile ছবি আপডেট হয়েছে!",
-      profileImage: req.file.path
+      profileImage: req.file.filename
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
