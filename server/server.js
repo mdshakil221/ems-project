@@ -65,6 +65,18 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/documents", documentRoutes);
 
+
+
+
+app.get("/test-cloudinary", (req, res) => {
+  res.json({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    has_secret: !!process.env.CLOUDINARY_API_SECRET
+  });
+});
+
+
 app.get("/", (req, res) => {
   res.json({ message: "EMS Server চলছে! 🚀" });
 });
