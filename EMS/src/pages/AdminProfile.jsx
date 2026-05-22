@@ -24,14 +24,14 @@ export default function AdminProfile() {
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const formData = new FormData();
     formData.append("profileImage", file);
+
     try {
       setUploading(true);
-      const { data } = await API.post("/auth/profile/image", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      // ✅ Cloudinary URL সরাসরি
+      const { data } = await API.post("/auth/profile/image", formData);
+      // ✅ Content-Type header দেবেন না — browser নিজে set করবে
       setProfileImage(data.profileImage);
       updateUser({ profileImage: data.profileImage });
       toast.success("Profile ছবি আপডেট হয়েছে!");
