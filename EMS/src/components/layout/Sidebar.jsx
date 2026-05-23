@@ -9,6 +9,7 @@ import {
 
 const menu = [
   { path: "/", label: "Dashboard", icon: <MdDashboard size={20} /> },
+  { path: "/admin-profile", label: "My Profile", icon: <MdAccountCircle size={20} /> },
   { path: "/employees", label: "Employees", icon: <MdPeople size={20} /> },
   { path: "/attendance", label: "Attendance", icon: <MdAccessTime size={20} /> },
   { path: "/leave", label: "Leave", icon: <MdEventNote size={20} /> },
@@ -20,7 +21,6 @@ const menu = [
   { path: "/documents", label: "Documents", icon: <MdDescription size={20} /> },
   { path: "/reports", label: "Reports", icon: <MdBarChart size={20} /> },
   { path: "/notifications", label: "Notifications", icon: <MdNotifications size={20} /> },
-  { path: "/admin-profile", label: "My Profile", icon: <MdAccountCircle size={20} /> },
 ];
 
 export default function Sidebar({ onClose }) {
