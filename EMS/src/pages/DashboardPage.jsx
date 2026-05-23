@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../api/axios";
 import { MdPeople, MdCheckCircle, MdTask, MdEventNote } from "react-icons/md";
 import toast from "react-hot-toast";
+import useWindowSize from "../hooks/useWindowSize";
 
 const StatCard = ({ icon, label, value, color }) => (
   <div style={{
@@ -21,6 +22,8 @@ const StatCard = ({ icon, label, value, color }) => (
 );
 
 export default function DashboardPage() {
+  const { isMobile } = useWindowSize();
+  
   const [employees, setEmployees] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -71,14 +74,23 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div style={{
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "16px", marginBottom: "32px"
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: isMobile ? "12px" : "16px",
+        marginBottom: "32px"
       }}>
-        <StatCard icon={<MdPeople />} label="মোট কর্মী" value={employees.length} color="#6366f1" />
-        <StatCard icon={<MdCheckCircle />} label="আজ উপস্থিত" value={presentToday} color="#22c55e" />
-        <StatCard icon={<MdTask />} label="বাকি কাজ" value={pendingTasks} color="#f59e0b" />
-        <StatCard icon={<MdEventNote />} label="ছুটির আবেদন" value={pendingLeaves} color="#ef4444" />
+        {/* ... */}
       </div>
+
+      {/* Charts */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+        gap: "16px"
+      }}>
+        {/* ... */}
+      </div>
+
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 

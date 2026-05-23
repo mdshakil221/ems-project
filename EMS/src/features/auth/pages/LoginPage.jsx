@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import useWindowSize from "../../../hooks/useWindowSize";
+
 
 export default function LoginPage() {
+  const { isMobile } = useWindowSize();
+
   const [role, setRole] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,15 +29,11 @@ export default function LoginPage() {
   // Role Select Screen
   if (!role) {
     return (
-      <div style={{
-        minHeight: "100vh", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        background: "#0f172a"
-      }}>
-        <div style={{ width: "100%", maxWidth: "480px", padding: "24px" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", padding: "20px" }}>
+        <div style={{ width: "100%", maxWidth: "480px"}}>
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <h1 style={{ color: "#6366f1", fontSize: "36px", fontWeight: "700" }}>EMS</h1>
-            <p style={{ color: "#f1f5f9", fontSize: "20px", marginTop: "8px" }}>
+            <h1 style={{ color: "#6366f1", fontSize: isMobile ? "28px" : "36px", fontWeight: "700" }}>EMS</h1>
+            <p style={{ color: "#f1f5f9", fontSize: isMobile ? "16px" : "20px", marginTop: "8px" }}>
               Employee Management System
             </p>
             <p style={{ color: "#94a3b8", fontSize: "14px", marginTop: "8px" }}>
@@ -41,14 +41,11 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div
-              onClick={() => setRole("admin")}
-              style={{
-                background: "#1e293b", borderRadius: "16px",
-                padding: "32px 24px", border: "1px solid #334155",
-                cursor: "pointer", textAlign: "center"
-              }}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
+            <div onClick={() => setRole("admin")} style={{
+              background: "#1e293b", borderRadius: "16px", padding: "32px 24px", border: "1px solid #334155",
+              cursor: "pointer", textAlign: "center"
+            }}
               onMouseEnter={e => {
                 e.currentTarget.style.border = "1px solid #6366f1";
                 e.currentTarget.style.background = "#6366f111";
