@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import API from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { MdTask, MdCheckCircle, MdPending, MdSend, MdEventNote, MdAdd, MdPerson, MdEdit, MdCamera } from "react-icons/md";
@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import ProfileSection from "./ProfileSection";
 import MySalarySection from "./MySalarySection";
 import MyPerformanceSection from "./MyPerformanceSection";
+import AttachmentSection from "../components/common/AttachmentSection";
 
 
 export default function EmployeeDashboard() {
@@ -20,6 +21,9 @@ export default function EmployeeDashboard() {
     const [leaveForm, setLeaveForm] = useState({
         type: "Sick Leave", from: "", to: "", reason: ""
     });
+    const [submitFiles, setSubmitFiles] = useState({});
+    const submitFileRef = useRef();
+    const [activeFileTaskId, setActiveFileTaskId] = useState(null);
 
     useEffect(() => { fetchData(); }, []);
 
@@ -54,6 +58,20 @@ export default function EmployeeDashboard() {
         }
     };
 
+
+    const handleFileSubmit = async (taskId) => {
+        if (!submitFiles[taskId]?.length) return;
+        try {
+            const formData = new FormData();
+            submitFiles[taskId].forEach(file => formData.append("files", file));
+            const { data } = await API.post(`/tasks/${taskId}/submit`, formData);
+            setTasks(tasks.map(t => t._id === taskId ? data : t));
+            setSubmitFiles({ ...submitFiles, [taskId]: [] });
+            toast.success("ফাইল submit হয়েছে!");
+        } catch (error) {
+            toast.error("Submit ব্যর্থ!");
+        }
+    };
     const handleLeaveSubmit = async () => {
         if (!leaveForm.from || !leaveForm.to || !leaveForm.reason) {
             toast.error("সব তথ্য পূরণ করুন!");
@@ -75,6 +93,10 @@ export default function EmployeeDashboard() {
         } catch (error) {
             toast.error("আবেদন জমা ব্যর্থ!");
         }
+    };
+
+     const handleDownload = (att) => {
+        window.open(att.url, "_blank");
     };
 
     const pendingTasks = tasks.filter(t => t.status === "pending").length;
@@ -239,6 +261,75 @@ export default function EmployeeDashboard() {
                                     </div>
                                 </div>
                             )}
+
+
+                            {/* Admin এর দেওয়া files */}
+                            {task.adminAttachments?.length > 0 && (
+                                <AttachmentSection
+                                    attachments={task.adminAttachments}
+                                    onDownload={handleDownload}
+                                    canDelete={false}
+                                    label="Admin এর দেওয়া ফাইল"
+                                />
+                            )}
+
+                            {/* Employee file submit */}
+                            {task.status !== "completed" && (
+                                <div style={{ marginTop: "12px" }}>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        style={{ display: "none" }}
+                                        ref={activeFileTaskId === task._id ? submitFileRef : null}
+                                        onChange={e => setSubmitFiles({
+                                            ...submitFiles,
+                                            [task._id]: Array.from(e.target.files)
+                                        })}
+                                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            setActiveFileTaskId(task._id);
+                                            setTimeout(() => submitFileRef.current?.click(), 100);
+                                        }}
+                                        style={{
+                                            padding: "8px 16px", background: "#f59e0b22",
+                                            border: "1px solid #f59e0b44", borderRadius: "8px",
+                                            color: "#f59e0b", cursor: "pointer", fontSize: "13px",
+                                            marginBottom: "8px"
+                                        }}>
+                                        📎 ফাইল যোগ করুন
+                                    </button>
+                                    {submitFiles[task._id]?.length > 0 && (
+                                        <>
+                                            {submitFiles[task._id].map((f, i) => (
+                                                <p key={i} style={{ color: "#94a3b8", fontSize: "12px" }}>📎 {f.name}</p>
+                                            ))}
+                                            <button
+                                                onClick={() => handleFileSubmit(task._id)}
+                                                style={{
+                                                    marginTop: "8px", padding: "8px 16px",
+                                                    background: "#6366f1", border: "none",
+                                                    borderRadius: "8px", color: "white",
+                                                    cursor: "pointer", fontSize: "13px"
+                                                }}>
+                                                📤 Submit করুন
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Employee submitted files */}
+                            {task.employeeAttachments?.length > 0 && (
+                                <AttachmentSection
+                                    attachments={task.employeeAttachments}
+                                    onDownload={handleDownload}
+                                    canDelete={false}
+                                    label="আমার Submit করা ফাইল"
+                                />
+                            )}
+
                             {task.status === "completed" && (
                                 <div style={{
                                     padding: "12px", background: "#22c55e11",
@@ -283,7 +374,7 @@ export default function EmployeeDashboard() {
                                     background: "#1e293b", borderRadius: "12px",
                                     padding: "20px", border: "1px solid #334155",
                                     borderLeft: `4px solid ${leave.status === "approved" ? "#22c55e" :
-                                            leave.status === "rejected" ? "#ef4444" : "#f59e0b"
+                                        leave.status === "rejected" ? "#ef4444" : "#f59e0b"
                                         }`
                                 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
