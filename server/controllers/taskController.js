@@ -12,7 +12,10 @@ const uploadToCloudinary = (buffer, originalname, mimetype) => {
       {
         folder: "ems-tasks",
         resource_type: resourceType,
-        public_id: `${Date.now()}-${originalname.replace(/\s/g, "_")}`,
+        public_id: `${Date.now()}-${originalname.replace(/[^a-zA-Z0-9.-]/g, "_")}`,
+        // ✅ Public access দিন
+        access_mode: "public",
+        type: "upload",
       },
       (error, result) => {
         if (error) reject(error);
