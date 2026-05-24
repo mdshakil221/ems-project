@@ -75,26 +75,48 @@ export const getProfile = async (req, res) => {
 
 export const uploadProfileImage = async (req, res) => {
   try {
+    console.log("=== UPLOAD START ===");
+    console.log("req.file:", req.file);
+    console.log("req.user:", req.user?._id);
+
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "ব্যবহারকারী পাওয়া যায়নি!" });
     }
 
-    // ✅ আগের Cloudinary image delete করুন
-    if (user.profileImage) {
-      const publicId = user.profileImage.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(`ems-profiles/${publicId}`);
+    if (!req.file) {
+      return res.status(400).json({ message: "ফাইল পাওয়া যায়নি!" });
     }
 
-    // ✅ Cloudinary থেকে নতুন image URL save করুন
-    user.profileImage = req.file.path;
+    if (user.profileImage) {
+      try {
+        const publicId = user.profileImage.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`ems-profiles/${publicId}`);
+      } catch (e) {
+        console.log("Delete old image:", e.message);
+      }
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "ems-profiles", resource_type: "image" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    user.profileImage = result.secure_url;
     await user.save();
 
     res.json({
       message: "Profile ছবি আপডেট হয়েছে!",
-      profileImage: req.file.path
+      profileImage: result.secure_url
     });
   } catch (error) {
+    console.error("Upload error:", error);
     res.status(500).json({ message: error.message });
   }
 };
