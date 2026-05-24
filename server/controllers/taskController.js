@@ -2,21 +2,44 @@ import Task from "../models/Task.js";
 import { createNotification } from "./notificationController.js";
 import { v2 as cloudinary } from "cloudinary";
 
-export const getTasks = async (req, res) => {
-  const tasks = await Task.find({}).sort({ createdAt: -1 });
-  res.json(tasks);
+// ✅ Buffer থেকে Cloudinary তে upload
+const uploadToCloudinary = (buffer, originalname, mimetype) => {
+  return new Promise((resolve, reject) => {
+    const isImage = mimetype.startsWith("image/");
+    const resourceType = isImage ? "image" : "raw";
+
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "ems-tasks",
+        resource_type: resourceType,
+        public_id: `${Date.now()}-${originalname.replace(/\s/g, "_")}`,
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
 };
 
 export const createTask = async (req, res) => {
   try {
     const { title, assignedTo, priority, status, dueDate, description } = req.body;
 
-    const adminAttachments = req.files ? req.files.map(file => ({
-      filename: file.filename,
-      originalName: file.originalname,
-      size: file.size,
-      url: file.path // ✅ Cloudinary URL
-    })) : [];
+    // ✅ Cloudinary তে upload করুন
+    const adminAttachments = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer, file.originalname, file.mimetype);
+        adminAttachments.push({
+          filename: result.public_id,
+          originalName: file.originalname,
+          size: file.size,
+          url: result.secure_url
+        });
+      }
+    }
 
     const task = await Task.create({
       title, assignedTo, priority, status,
@@ -50,30 +73,26 @@ export const updateTask = async (req, res) => {
     task.note = req.body.note || task.note;
     task.description = req.body.description || task.description;
 
-    // ✅ Admin Attachments যোগ করুন
+    // ✅ নতুন files Cloudinary তে upload করুন
     if (req.files && req.files.length > 0) {
-      const newAttachments = req.files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        size: file.size,
-        url: file.path // ✅ Cloudinary URL
-      }));
-      task.adminAttachments = [...(task.adminAttachments || []), ...newAttachments];
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer, file.originalname, file.mimetype);
+        task.adminAttachments.push({
+          filename: result.public_id,
+          originalName: file.originalname,
+          size: file.size,
+          url: result.secure_url
+        });
+      }
     }
 
     const updated = await task.save();
 
     if (prevStatus !== "completed" && req.body.status === "completed") {
-      await createNotification(
-        `✅ "${task.title}" — ${task.assignedTo} সম্পন্ন করেছে!`,
-        "task_completed"
-      );
+      await createNotification(`✅ "${task.title}" — ${task.assignedTo} সম্পন্ন করেছে!`, "task_completed");
     }
     if (prevStatus === "pending" && req.body.status === "in-progress") {
-      await createNotification(
-        `🚀 "${task.title}" — ${task.assignedTo} শুরু করেছে!`,
-        "task"
-      );
+      await createNotification(`🚀 "${task.title}" — ${task.assignedTo} শুরু করেছে!`, "task");
     }
 
     res.json(updated);
@@ -82,7 +101,6 @@ export const updateTask = async (req, res) => {
   }
 };
 
-// ✅ Employee Attachment Submit
 export const submitEmployeeAttachment = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -94,18 +112,18 @@ export const submitEmployeeAttachment = async (req, res) => {
       return res.status(400).json({ message: "ফাইল দিন!" });
     }
 
-    const newAttachments = req.files.map(file => ({
-      filename: file.filename,
-      originalName: file.originalname,
-      size: file.size,
-      url: file.path // ✅ Cloudinary URL
-    }));
-
-    task.employeeAttachments = [...(task.employeeAttachments || []), ...newAttachments];
-
-    if (req.body.note) {
-      task.note = req.body.note;
+    // ✅ Cloudinary তে upload করুন
+    for (const file of req.files) {
+      const result = await uploadToCloudinary(file.buffer, file.originalname, file.mimetype);
+      task.employeeAttachments.push({
+        filename: result.public_id,
+        originalName: file.originalname,
+        size: file.size,
+        url: result.secure_url
+      });
     }
+
+    if (req.body.note) task.note = req.body.note;
 
     const updated = await task.save();
 
@@ -120,8 +138,6 @@ export const submitEmployeeAttachment = async (req, res) => {
   }
 };
 
-
-// ✅ Attachment Delete
 export const deleteTaskAttachment = async (req, res) => {
   try {
     const { id, filename, type } = req.params;
@@ -130,8 +146,13 @@ export const deleteTaskAttachment = async (req, res) => {
       return res.status(404).json({ message: "কাজ পাওয়া যায়নি!" });
     }
 
-    // ✅ Cloudinary থেকে delete করুন
-    await cloudinary.uploader.destroy(`ems-tasks/${filename}`);
+    // ✅ Cloudinary থেকে delete
+    try {
+      await cloudinary.uploader.destroy(filename, { resource_type: "raw" });
+      await cloudinary.uploader.destroy(filename, { resource_type: "image" });
+    } catch (e) {
+      console.log("Cloudinary delete:", e.message);
+    }
 
     if (type === "admin") {
       task.adminAttachments = task.adminAttachments.filter(a => a.filename !== filename);
@@ -144,6 +165,11 @@ export const deleteTaskAttachment = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+export const getTasks = async (req, res) => {
+  const tasks = await Task.find({}).sort({ createdAt: -1 });
+  res.json(tasks);
 };
 
 export const deleteTask = async (req, res) => {

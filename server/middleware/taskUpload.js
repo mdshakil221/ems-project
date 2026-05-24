@@ -1,19 +1,24 @@
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req, file) => {
-    const isImage = ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.mimetype);
-    return {
-      folder: "ems-tasks",
-      resource_type: isImage ? "image" : "raw", // ✅ PDF/DOC এর জন্য raw
-      allowed_formats: ["jpg", "jpeg", "png", "webp", "pdf", "doc", "docx", "xls", "xlsx"],
-    };
-  },
+// ✅ Memory storage — file disk এ save হবে না
+const taskUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/jpeg", "image/jpg", "image/png", "image/webp",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("শুধুমাত্র JPG, PNG, PDF, DOC, DOCX, XLS, XLSX ফাইল!"), false);
+    }
+  }
 });
-
-const taskUpload = multer({ storage });
 
 export default taskUpload;
