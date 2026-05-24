@@ -23,7 +23,7 @@ const StatCard = ({ icon, label, value, color }) => (
 
 export default function DashboardPage() {
   const { isMobile } = useWindowSize();
-  
+
   const [employees, setEmployees] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -73,22 +73,17 @@ export default function DashboardPage() {
       </p>
 
       {/* Stat Cards */}
+      {/* Stat Cards */}
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
         gap: isMobile ? "12px" : "16px",
         marginBottom: "32px"
       }}>
-        {/* ... */}
-      </div>
-
-      {/* Charts */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-        gap: "16px"
-      }}>
-        {/* ... */}
+        <StatCard icon={<MdPeople size={28} />} label="মোট কর্মী" value={employees.length} color="#6366f1" />
+        <StatCard icon={<MdCheckCircle size={28} />} label="আজ উপস্থিত" value={presentToday} color="#22c55e" />
+        <StatCard icon={<MdTask size={28} />} label="বাকি Task" value={pendingTasks} color="#f59e0b" />
+        <StatCard icon={<MdEventNote size={28} />} label="অপেক্ষমান ছুটি" value={pendingLeaves} color="#ef4444" />
       </div>
 
 
