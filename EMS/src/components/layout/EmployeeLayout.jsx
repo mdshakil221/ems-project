@@ -5,7 +5,8 @@ import { useNavigate, NavLink } from "react-router-dom";
 import {
   MdDashboard, MdLogout, MdPerson,
   MdCampaign, MdBeachAccess, MdDescription,
-  MdMenu, MdClose
+  MdMenu, MdClose, MdTask, MdEventNote,
+  MdPayment, MdStar
 } from "react-icons/md";
 import toast from "react-hot-toast";
 import useWindowSize from "../../hooks/useWindowSize";
@@ -24,6 +25,11 @@ export default function EmployeeLayout() {
 
   const menuItems = [
     { path: "/employee/dashboard", label: "Dashboard", icon: <MdDashboard size={20} /> },
+    { path: "/employee/tasks", label: "আমার কাজ", icon: <MdTask size={20} /> },
+    { path: "/employee/leaves", label: "আমার ছুটি", icon: <MdEventNote size={20} /> },
+    { path: "/employee/profile", label: "আমার Profile", icon: <MdPerson size={20} /> },
+    { path: "/employee/salary", label: "আমার বেতন", icon: <MdPayment size={20} /> },
+    { path: "/employee/performance", label: "আমার Performance", icon: <MdStar size={20} /> },
     { path: "/employee/announcements", label: "Announcements", icon: <MdCampaign size={20} /> },
     { path: "/employee/holidays", label: "Holidays", icon: <MdBeachAccess size={20} /> },
     { path: "/employee/documents", label: "Documents", icon: <MdDescription size={20} /> },
@@ -98,16 +104,12 @@ export default function EmployeeLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#0f172a" }}>
-
-      {/* Mobile Overlay */}
       {isMobile && sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{
           position: "fixed", inset: 0,
           background: "#00000066", zIndex: 40
         }} />
       )}
-
-      {/* Sidebar */}
       <div style={{
         position: isMobile ? "fixed" : "relative",
         left: isMobile ? (sidebarOpen ? "0" : "-240px") : "0",
@@ -116,10 +118,7 @@ export default function EmployeeLayout() {
       }}>
         <SidebarContent />
       </div>
-
-      {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        {/* Header */}
         <div style={{
           background: "#1e293b", borderBottom: "1px solid #334155",
           padding: isMobile ? "12px 16px" : "16px 24px",
@@ -144,7 +143,6 @@ export default function EmployeeLayout() {
             color: "#6366f1", fontSize: "12px"
           }}>Employee</span>
         </div>
-
         <main style={{ flex: 1, padding: isMobile ? "16px" : "24px", overflowY: "auto" }}>
           <Outlet />
         </main>

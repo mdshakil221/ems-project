@@ -18,6 +18,12 @@ import AnnouncementsPage from "../features/announcements/pages/AnnouncementsPage
 import HolidaysPage from "../features/holidays/pages/HolidaysPage";
 import DocumentsPage from "../features/documents/pages/DocumentsPage";
 
+import MyTasksPage from "../pages/employee/MyTasksPage";
+import MyLeavesPage from "../pages/employee/MyLeavesPage";
+import MyProfilePage from "../pages/employee/MyProfilePage";
+import MySalaryPage from "../pages/employee/MySalaryPage";
+import MyPerformancePage from "../pages/employee/MyPerformancePage";
+
 
 const AdminRoute = ({ children }) => {
   const { user } = useAuth();
@@ -65,6 +71,11 @@ export default function AppRoutes() {
       {/* Employee Only */}
       <Route path="/employee" element={<EmployeeRoute><EmployeeLayout /></EmployeeRoute>}>
         <Route path="dashboard" element={<EmployeeDashboard />} />
+        <Route path="tasks" element={<MyTasksPage />} />
+        <Route path="leaves" element={<MyLeavesPage />} />
+        <Route path="profile" element={<MyProfilePage />} />
+        <Route path="salary" element={<MySalaryPage />} />
+        <Route path="performance" element={<MyPerformancePage />} />
         <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="holidays" element={<HolidaysPage />} />
         <Route path="documents" element={<DocumentsPage />} />
