@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import API from "../../../api/axios";
 import { MdAdd, MdEdit, MdDelete } from "react-icons/md";
 import toast from "react-hot-toast";
 import SearchFilter from "../../../components/common/SearchFilter";
+import AttachmentSection from "../../../components/common/AttachmentSection";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState([]);
@@ -14,8 +15,10 @@ export default function TasksPage() {
   const [activeFilters, setActiveFilters] = useState({});
   const [form, setForm] = useState({
     title: "", assignedTo: "", priority: "medium",
-    status: "pending", dueDate: ""
+    status: "pending", dueDate: "", description: ""
   });
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const fileRef = useRef();
 
   useEffect(() => {
     fetchTasks();
@@ -66,15 +69,8 @@ export default function TasksPage() {
     const matchSearch = search === "" ||
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.assignedTo.toLowerCase().includes(search.toLowerCase());
-
-    const matchStatus = !activeFilters.status ||
-      activeFilters.status === "all" ||
-      t.status === activeFilters.status;
-
-    const matchPriority = !activeFilters.priority ||
-      activeFilters.priority === "all" ||
-      t.priority === activeFilters.priority;
-
+    const matchStatus = !activeFilters.status || activeFilters.status === "all" || t.status === activeFilters.status;
+    const matchPriority = !activeFilters.priority || activeFilters.priority === "all" || t.priority === activeFilters.priority;
     return matchSearch && matchStatus && matchPriority;
   });
 
@@ -85,11 +81,16 @@ export default function TasksPage() {
   const handleOpen = (task = null) => {
     if (task) {
       setEditingTask(task);
-      setForm(task);
+      setForm({
+        title: task.title, assignedTo: task.assignedTo,
+        priority: task.priority, status: task.status,
+        dueDate: task.dueDate, description: task.description || ""
+      });
     } else {
       setEditingTask(null);
-      setForm({ title: "", assignedTo: "", priority: "medium", status: "pending", dueDate: "" });
+      setForm({ title: "", assignedTo: "", priority: "medium", status: "pending", dueDate: "", description: "" });
     }
+    setSelectedFiles([]);
     setShowModal(true);
   };
 
@@ -99,16 +100,26 @@ export default function TasksPage() {
       return;
     }
     try {
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("assignedTo", form.assignedTo);
+      formData.append("priority", form.priority);
+      formData.append("status", form.status);
+      formData.append("dueDate", form.dueDate);
+      formData.append("description", form.description || "");
+      selectedFiles.forEach(file => formData.append("attachments", file));
+
       if (editingTask) {
-        const { data } = await API.put(`/tasks/${editingTask._id}`, form);
+        const { data } = await API.put(`/tasks/${editingTask._id}`, formData);
         setTasks(tasks.map(t => t._id === editingTask._id ? data : t));
         toast.success("কাজ আপডেট হয়েছে!");
       } else {
-        const { data } = await API.post("/tasks", form);
+        const { data } = await API.post("/tasks", formData);
         setTasks([data, ...tasks]);
         toast.success("নতুন কাজ যোগ হয়েছে!");
       }
       setShowModal(false);
+      setSelectedFiles([]);
     } catch (error) {
       toast.error("সমস্যা হয়েছে!");
     }
@@ -124,6 +135,33 @@ export default function TasksPage() {
     }
   };
 
+  const handleDownloadAttachment = (att) => {
+    window.open(att.url, "_blank");
+  };
+
+  const handleDeleteAttachment = async (taskId, filename, type) => {
+    try {
+      await API.delete(`/tasks/${taskId}/attachment/${filename}/${type}`);
+      setTasks(tasks.map(t => {
+        if (t._id === taskId) {
+          return {
+            ...t,
+            adminAttachments: type === "admin"
+              ? t.adminAttachments.filter(a => a.filename !== filename)
+              : t.adminAttachments,
+            employeeAttachments: type === "employee"
+              ? t.employeeAttachments.filter(a => a.filename !== filename)
+              : t.employeeAttachments,
+          };
+        }
+        return t;
+      }));
+      toast.success("ফাইল মুছে ফেলা হয়েছে!");
+    } catch (error) {
+      toast.error("মুছে ফেলা ব্যর্থ!");
+    }
+  };
+
   const handleStatusChange = async (id, status) => {
     try {
       const { data } = await API.put(`/tasks/${id}`, { status });
@@ -134,16 +172,8 @@ export default function TasksPage() {
     }
   };
 
-  const priorityColor = (p) => ({
-    urgent: "#ef4444", high: "#f59e0b",
-    medium: "#6366f1", low: "#22c55e"
-  }[p] || "#94a3b8");
-
-  const statusColor = (s) => ({
-    "pending": "#f59e0b",
-    "in-progress": "#6366f1",
-    "completed": "#22c55e"
-  }[s] || "#94a3b8");
+  const priorityColor = (p) => ({ urgent: "#ef4444", high: "#f59e0b", medium: "#6366f1", low: "#22c55e" }[p] || "#94a3b8");
+  const statusColor = (s) => ({ "pending": "#f59e0b", "in-progress": "#6366f1", "completed": "#22c55e" }[s] || "#94a3b8");
 
   const inputStyle = {
     width: "100%", padding: "10px 12px",
@@ -159,15 +189,12 @@ export default function TasksPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
         <div>
           <h2 style={{ color: "#f1f5f9" }}>কাজের তালিকা</h2>
-          <p style={{ color: "#94a3b8", fontSize: "13px" }}>
-            মোট {tasks.length} টি কাজ ({filtered.length} দেখাচ্ছে)
-          </p>
+          <p style={{ color: "#94a3b8", fontSize: "13px" }}>মোট {tasks.length} টি কাজ ({filtered.length} দেখাচ্ছে)</p>
         </div>
         <button onClick={() => handleOpen()} style={{
           display: "flex", alignItems: "center", gap: "8px",
           padding: "10px 20px", background: "#6366f1",
-          border: "none", borderRadius: "8px",
-          color: "white", cursor: "pointer", fontWeight: "600"
+          border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontWeight: "600"
         }}>
           <MdAdd size={20} /> নতুন কাজ
         </button>
@@ -192,50 +219,40 @@ export default function TasksPage() {
 
       {/* Search & Filter */}
       <SearchFilter
-        search={search}
-        setSearch={setSearch}
-        filters={filterConfig}
-        activeFilters={activeFilters}
+        search={search} setSearch={setSearch}
+        filters={filterConfig} activeFilters={activeFilters}
         setActiveFilters={setActiveFilters}
         placeholder="কাজের নাম বা কর্মী দিয়ে খুঁজুন..."
       />
 
       {/* Tasks Grid */}
       {filtered.length === 0 ? (
-        <div style={{
-          background: "#1e293b", borderRadius: "12px",
-          padding: "40px", border: "1px solid #334155", textAlign: "center"
-        }}>
+        <div style={{ background: "#1e293b", borderRadius: "12px", padding: "40px", border: "1px solid #334155", textAlign: "center" }}>
           <p style={{ color: "#94a3b8", fontSize: "16px" }}>কোনো কাজ পাওয়া যায়নি</p>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
           {filtered.map(task => (
             <div key={task._id} style={{
-              background: "#1e293b", borderRadius: "12px",
-              padding: "20px", border: "1px solid #334155",
-              borderLeft: `4px solid ${priorityColor(task.priority)}`
+              background: "#1e293b", borderRadius: "12px", padding: "20px",
+              border: "1px solid #334155", borderLeft: `4px solid ${priorityColor(task.priority)}`
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
                 <span style={{
                   padding: "3px 10px", borderRadius: "20px", fontSize: "11px",
-                  background: priorityColor(task.priority) + "22",
-                  color: priorityColor(task.priority)
+                  background: priorityColor(task.priority) + "22", color: priorityColor(task.priority)
                 }}>{task.priority}</span>
                 <div style={{ display: "flex", gap: "6px" }}>
-                  <button onClick={() => handleOpen(task)} style={{
-                    padding: "4px", background: "#6366f122", border: "none",
-                    borderRadius: "6px", color: "#6366f1", cursor: "pointer"
-                  }}><MdEdit size={14} /></button>
-                  <button onClick={() => handleDelete(task._id)} style={{
-                    padding: "4px", background: "#ef444422", border: "none",
-                    borderRadius: "6px", color: "#ef4444", cursor: "pointer"
-                  }}><MdDelete size={14} /></button>
+                  <button onClick={() => handleOpen(task)} style={{ padding: "4px", background: "#6366f122", border: "none", borderRadius: "6px", color: "#6366f1", cursor: "pointer" }}><MdEdit size={14} /></button>
+                  <button onClick={() => handleDelete(task._id)} style={{ padding: "4px", background: "#ef444422", border: "none", borderRadius: "6px", color: "#ef4444", cursor: "pointer" }}><MdDelete size={14} /></button>
                 </div>
               </div>
               <h4 style={{ color: "#f1f5f9", marginBottom: "8px", fontSize: "15px" }}>{task.title}</h4>
               <p style={{ color: "#94a3b8", fontSize: "13px", marginBottom: "8px" }}>👤 {task.assignedTo}</p>
               <p style={{ color: "#94a3b8", fontSize: "12px", marginBottom: "16px" }}>📅 {task.dueDate}</p>
+              {task.description && (
+                <p style={{ color: "#94a3b8", fontSize: "12px", marginBottom: "12px" }}>{task.description}</p>
+              )}
               <select
                 value={task.status}
                 onChange={e => handleStatusChange(task._id, e.target.value)}
@@ -244,13 +261,34 @@ export default function TasksPage() {
                   background: statusColor(task.status) + "22",
                   border: `1px solid ${statusColor(task.status)}44`,
                   borderRadius: "8px", color: statusColor(task.status),
-                  fontSize: "13px", outline: "none", cursor: "pointer"
+                  fontSize: "13px", outline: "none", cursor: "pointer", marginBottom: "12px"
                 }}
               >
                 <option value="pending">বাকি</option>
                 <option value="in-progress">চলমান</option>
                 <option value="completed">সম্পন্ন</option>
               </select>
+
+              {/* ✅ Admin Attachments */}
+              {task.adminAttachments?.length > 0 && (
+                <AttachmentSection
+                  attachments={task.adminAttachments}
+                  onDownload={handleDownloadAttachment}
+                  onDelete={(filename) => handleDeleteAttachment(task._id, filename, "admin")}
+                  canDelete={true}
+                  label="Admin এর দেওয়া ফাইল"
+                />
+              )}
+
+              {/* ✅ Employee Attachments */}
+              {task.employeeAttachments?.length > 0 && (
+                <AttachmentSection
+                  attachments={task.employeeAttachments}
+                  onDownload={handleDownloadAttachment}
+                  canDelete={false}
+                  label="Employee এর Submit করা ফাইল"
+                />
+              )}
             </div>
           ))}
         </div>
@@ -260,7 +298,8 @@ export default function TasksPage() {
       {showModal && (
         <div style={{
           position: "fixed", inset: 0, background: "#00000088",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+          overflowY: "auto", padding: "20px"
         }}>
           <div style={{
             background: "#1e293b", borderRadius: "12px", padding: "32px",
@@ -306,17 +345,60 @@ export default function TasksPage() {
                 <input type="date" value={form.dueDate}
                   onChange={e => setForm({ ...form, dueDate: e.target.value })} style={inputStyle} />
               </div>
+
+              {/* ✅ Description */}
+              <div>
+                <label style={{ color: "#94a3b8", fontSize: "13px", display: "block", marginBottom: "6px" }}>বিবরণ</label>
+                <textarea
+                  placeholder="কাজের বিস্তারিত বিবরণ..."
+                  value={form.description || ""}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  rows={3}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+
+              {/* ✅ File Upload */}
+              <div>
+                <label style={{ color: "#94a3b8", fontSize: "13px", display: "block", marginBottom: "6px" }}>
+                  ফাইল সংযুক্ত করুন (সর্বোচ্চ ৫টি)
+                </label>
+                <div
+                  onClick={() => fileRef.current.click()}
+                  style={{
+                    border: `2px dashed ${selectedFiles.length > 0 ? "#6366f1" : "#334155"}`,
+                    borderRadius: "8px", padding: "16px",
+                    textAlign: "center", cursor: "pointer",
+                    background: selectedFiles.length > 0 ? "#6366f111" : "transparent"
+                  }}>
+                  <p style={{ color: selectedFiles.length > 0 ? "#6366f1" : "#94a3b8", fontSize: "13px" }}>
+                    {selectedFiles.length > 0 ? `${selectedFiles.length} টি ফাইল বেছে নেওয়া হয়েছে` : "ক্লিক করে ফাইল বেছে নিন"}
+                  </p>
+                </div>
+                <input
+                  type="file" ref={fileRef} multiple
+                  onChange={e => setSelectedFiles(Array.from(e.target.files))}
+                  accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                  style={{ display: "none" }}
+                />
+                {selectedFiles.length > 0 && (
+                  <div style={{ marginTop: "8px" }}>
+                    {selectedFiles.map((f, i) => (
+                      <p key={i} style={{ color: "#94a3b8", fontSize: "12px" }}>📎 {f.name}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
             <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
               <button onClick={handleSave} style={{
                 flex: 1, padding: "12px", background: "#6366f1",
-                border: "none", borderRadius: "8px", color: "white",
-                cursor: "pointer", fontWeight: "600"
+                border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontWeight: "600"
               }}>সেভ করুন</button>
               <button onClick={() => setShowModal(false)} style={{
                 flex: 1, padding: "12px", background: "#334155",
-                border: "none", borderRadius: "8px", color: "#f1f5f9",
-                cursor: "pointer", fontWeight: "600"
+                border: "none", borderRadius: "8px", color: "#f1f5f9", cursor: "pointer", fontWeight: "600"
               }}>বাতিল</button>
             </div>
           </div>

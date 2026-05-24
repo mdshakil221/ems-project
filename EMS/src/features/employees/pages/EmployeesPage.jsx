@@ -132,6 +132,10 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleDownload = (att) => {
+    window.open(att.url, "_blank");
+  };
+
   const handleToggleAccount = async (userId, isActive) => {
     try {
       await API.put(`/auth/users/${userId}/toggle`);
