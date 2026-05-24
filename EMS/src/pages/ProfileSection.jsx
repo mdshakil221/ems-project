@@ -29,9 +29,8 @@ export default function ProfileSection({ user }) {
 
     try {
       setUploading(true);
-      const { data } = await API.post("/auth/profile/image", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const { data } = await API.post("/auth/profile/image", formData);
+      // ✅ Content-Type header remove করা হয়েছে
       setProfileImage(data.profileImage);
       toast.success("Profile ছবি আপডেট হয়েছে!");
     } catch (error) {
