@@ -1,5 +1,5 @@
 import Attendance from "../models/Attendance.js";
-import { createNotification } from "../controllers/notificationController.js";
+import { createNotification } from "./notificationController.js";
 
 export const getAttendance = async (req, res) => {
   try {
@@ -70,21 +70,29 @@ export const updateAttendance = async (req, res) => {
     res.status(404).json({ message: "উপস্থিতি পাওয়া যায়নি!" });
   }
 };
-
-// ✅ Employee নিজের attendance দেখার জন্য
+// ✅ employeeId এর বদলে employeeName দিয়ে filter করো
 export const getMyAttendance = async (req, res) => {
   try {
     const { month, year } = req.query;
-    const filter = { employeeId: req.user._id };
+
+    // ✅ Debug করতে
+    console.log("User name:", req.user.name);
+    console.log("Month:", month, "Year:", year);
+
+    const filter = { employeeName: req.user.name };
 
     if (month && year) {
-      // ওই মাসের সব attendance
       const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
       const endDate = new Date(year, month, 0).toISOString().split("T")[0];
       filter.date = { $gte: startDate, $lte: endDate };
     }
 
+    console.log("Filter:", filter);
+
     const attendance = await Attendance.find(filter).sort({ date: 1 });
+
+    console.log("Found:", attendance.length);
+
     res.json(attendance);
   } catch (error) {
     res.status(500).json({ message: error.message });
