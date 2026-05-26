@@ -100,14 +100,22 @@ export default function MyProfilePage() {
 
   const cells = buildCalendar();
 
-  return (
-    <div>
-      <h2 style={{ color: "#f1f5f9", marginBottom: "24px" }}>👤 আমার Profile</h2>
+ return (
+  <div>
+    <h2 style={{ color: "#f1f5f9", marginBottom: "24px" }}>👤 আমার Profile</h2>
 
+    {/* ✅ Profile + Calendar পাশাপাশি */}
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "24px",
+      alignItems: "start"
+    }}>
+      {/* Left — Profile */}
       <ProfileSection user={user} />
 
-      {/* Attendance Calendar */}
-      <div style={{ marginTop: "32px" }}>
+      {/* Right — Calendar */}
+      <div>
         <h3 style={{ color: "#f1f5f9", marginBottom: "20px", fontSize: "18px" }}>
           📅 উপস্থিতির ক্যালেন্ডার
         </h3>
@@ -115,8 +123,7 @@ export default function MyProfilePage() {
         {/* Summary Cards */}
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "8px", marginBottom: "16px", // ✅ ছোট করুন
-          maxWidth: "380px", margin: "0 auto 16px" // ✅ center করুন
+          gap: "8px", marginBottom: "16px", maxwidth: "380px", margin: "0 auto 16px"
         }}>
           {[
             { label: "উপস্থিত", value: summary.present, color: "#22c55e" },
@@ -125,7 +132,7 @@ export default function MyProfilePage() {
           ].map(card => (
             <div key={card.label} style={{
               background: "#1e293b", borderRadius: "8px",
-              padding: "10px", border: "1px solid #334155", // ✅ padding কমান
+              padding: "10px", border: "1px solid #334155",
               textAlign: "center"
             }}>
               <h3 style={{ color: card.color, fontSize: "20px", fontWeight: "700" }}>{card.value}</h3>
@@ -137,36 +144,32 @@ export default function MyProfilePage() {
         {/* Calendar Box */}
         <div style={{
           background: "#1e293b", borderRadius: "12px",
-          padding: "16px", border: "1px solid #334155",
-          maxWidth: "380px", // ✅ যোগ করুন — ছোট করবে
-          margin: "0 auto"   // ✅ যোগ করুন — center এ রাখবে
+          padding: "16px", border: "1px solid #334155", maxWidth: "580px", margin: "0 auto"
         }}>
+
           {/* Month Navigator */}
           <div style={{
             display: "flex", justifyContent: "space-between",
-            alignItems: "center", marginBottom: "12px" // ✅ 20px থেকে 12px
+            alignItems: "center", marginBottom: "12px"
           }}>
             <button onClick={prevMonth} style={{
               background: "#334155", border: "none", borderRadius: "6px",
-              color: "#f1f5f9", padding: "6px 12px", // ✅ ছোট করুন
-              cursor: "pointer", fontSize: "14px" // ✅ 16px থেকে 14px
+              color: "#f1f5f9", padding: "6px 12px", cursor: "pointer", fontSize: "14px"
             }}>‹</button>
 
             <h4 style={{ color: "#f1f5f9", fontSize: "14px", fontWeight: "600" }}>
               {MONTH_NAMES[currentMonth - 1]} {currentYear}
             </h4>
-
             <button onClick={nextMonth} style={{
               background: "#334155", border: "none", borderRadius: "6px",
-              color: "#f1f5f9", padding: "6px 12px",
-              cursor: "pointer", fontSize: "14px"
+              color: "#f1f5f9", padding: "6px 12px", cursor: "pointer", fontSize: "14px"
             }}>›</button>
           </div>
 
           {/* Weekday Headers */}
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
-            gap: "4px", marginBottom: "6px"
+            gap: "2px", marginBottom: "4px"
           }}>
             {WEEKDAYS.map(day => (
               <div key={day} style={{
@@ -175,18 +178,17 @@ export default function MyProfilePage() {
               }}>{day}</div>
             ))}
           </div>
-          
+
           {/* Calendar Days */}
           {loading ? (
-            <p style={{ color: "#94a3b8", textAlign: "center", padding: "40px" }}>লোড হচ্ছে...</p>
+            <p style={{ color: "#94a3b8", textAlign: "center", padding: "20px" }}>লোড হচ্ছে...</p>
           ) : (
             <div style={{
               display: "grid", gridTemplateColumns: "repeat(7, 1fr)",
-              gap: "4px"
+              gap: "2px"
             }}>
               {cells.map((day, index) => {
                 if (!day) return <div key={`blank-${index}`} />;
-
                 const dateKey = getDateKey(day);
                 const status = attendanceMap[dateKey];
                 const colors = status ? STATUS_COLORS[status] : null;
@@ -195,7 +197,7 @@ export default function MyProfilePage() {
                 return (
                   <div key={dateKey} style={{
                     aspectRatio: "1",
-                    borderRadius: "6px", // ✅ 8px থেকে 6px
+                    borderRadius: "6px",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -204,19 +206,19 @@ export default function MyProfilePage() {
                     border: todayStyle
                       ? "2px solid #6366f1"
                       : colors
-                        ? `1px solid ${colors.border}44`
-                        : "1px solid #334155",
+                      ? `1px solid ${colors.border}44`
+                      : "1px solid #33415566",
                     cursor: "default",
-                    padding: "2px" // ✅ 4px থেকে 2px
+                    padding: "2px"
                   }}>
                     <span style={{
-                      fontSize: "11px", // ✅ 13px থেকে 11px
+                      fontSize: "11px",
                       fontWeight: todayStyle ? "700" : "400",
                       color: colors ? colors.text : todayStyle ? "#6366f1" : "#94a3b8"
                     }}>{day}</span>
                     {status && (
                       <span style={{
-                        fontSize: "7px", // ✅ 8px থেকে 7px
+                        fontSize: "7px",
                         color: colors.text,
                         marginTop: "1px",
                         fontWeight: "600"
@@ -232,13 +234,13 @@ export default function MyProfilePage() {
 
           {/* Legend */}
           <div style={{
-            display: "flex", gap: "12px", marginTop: "12px", // ✅ কমান
+            display: "flex", gap: "12px", marginTop: "12px",
             justifyContent: "center", flexWrap: "wrap"
           }}>
             {Object.entries(STATUS_COLORS).map(([key, val]) => (
               <div key={key} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <div style={{
-                  width: "10px", height: "10px", borderRadius: "3px", // ✅ 12px থেকে 10px
+                  width: "10px", height: "10px", borderRadius: "3px",
                   background: val.bg, border: `1px solid ${val.border}`
                 }} />
                 <span style={{ color: "#94a3b8", fontSize: "11px" }}>{val.label}</span>
@@ -248,5 +250,6 @@ export default function MyProfilePage() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
