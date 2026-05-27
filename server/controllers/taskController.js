@@ -1,6 +1,7 @@
 import Task from "../models/Task.js";
 import { createNotification } from "./notificationController.js";
 import { v2 as cloudinary } from "cloudinary";
+import { createLog } from "./activityLogController.js";
 
 // ✅ Buffer থেকে Cloudinary তে upload
 const uploadToCloudinary = (buffer, originalname, mimetype) => {
@@ -44,10 +45,12 @@ export const createTask = async (req, res) => {
       }
     }
 
-    const task = await Task.create({
-      title, assignedTo, priority, status,
-      dueDate, description, adminAttachments
-    });
+    await createLog(
+      req.user._id, req.user.name, req.user.role,
+      `নতুন Task "${title}" তৈরি করেছে`,
+      "task",
+      `Assigned to: ${assignedTo}, Priority: ${priority}`
+    );
 
     await createNotification(
       `📋 নতুন কাজ "${title}" — ${assignedTo} কে assign করা হয়েছে`,
@@ -63,8 +66,14 @@ export const createTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-    if (!task) {
-      return res.status(404).json({ message: "কাজ পাওয়া যায়নি!" });
+    if (prevStatus !== "completed" && req.body.status === "completed") {
+      // ✅ Task complete log
+      await createLog(
+        req.user._id, req.user.name, req.user.role,
+        `Task "${task.title}" সম্পন্ন করেছে`,
+        "task",
+        `Assigned to: ${task.assignedTo}`
+      );
     }
 
     const prevStatus = task.status;

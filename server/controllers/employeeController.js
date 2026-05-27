@@ -1,6 +1,7 @@
 import Employee from "../models/Employee.js";
 import User from "../models/User.js";
 import Notification from "../models/Notification.js";
+import { createLog } from "./activityLogController.js";
 
 export const getEmployees = async (req, res) => {
   const employees = await Employee.find({});
@@ -40,6 +41,13 @@ export const createEmployee = async (req, res) => {
     loginPassword: password, // plain text store
   });
 
+  await createLog(
+    req.user._id, req.user.name, req.user.role,
+    `নতুন Employee "${name}" যোগ করেছে`,
+    "employee",
+    `Email: ${email}, Department: ${department}`
+  );
+
   await Notification.create({
     message: `👤 নতুন কর্মী ${name} যোগ হয়েছে`,
     type: "employee"
@@ -71,6 +79,12 @@ export const updateEmployee = async (req, res) => {
     }
 
     const updated = await employee.save();
+    await createLog(
+      req.user._id, req.user.name, req.user.role,
+      `Employee "${employee.name}" আপডেট করেছে`,
+      "employee",
+      `Department: ${employee.department}, Position: ${employee.position}`
+    );
     res.json(updated);
   } else {
     res.status(404).json({ message: "কর্মী পাওয়া যায়নি!" });
@@ -80,7 +94,12 @@ export const updateEmployee = async (req, res) => {
 export const deleteEmployee = async (req, res) => {
   const employee = await Employee.findById(req.params.id);
   if (employee) {
-    await User.findOneAndDelete({ email: employee.email });
+    await createLog(
+      req.user._id, req.user.name, req.user.role,
+      `Employee "${employee.name}" মুছে ফেলেছে`,
+      "employee",
+      `Email: ${employee.email}`
+    );
     await employee.deleteOne();
     res.json({ message: "কর্মী ও Account মুছে ফেলা হয়েছে!" });
   } else {

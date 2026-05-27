@@ -17,6 +17,7 @@ import AdminProfile from "../pages/AdminProfile";
 import AnnouncementsPage from "../features/announcements/pages/AnnouncementsPage";
 import HolidaysPage from "../features/holidays/pages/HolidaysPage";
 import DocumentsPage from "../features/documents/pages/DocumentsPage";
+import ActivityLogPage from "../features/activityLog/pages/ActivityLogPage";
 
 import MyTasksPage from "../pages/employee/MyTasksPage";
 import MyLeavesPage from "../pages/employee/MyLeavesPage";
@@ -54,6 +55,7 @@ export default function AppRoutes() {
       {/* Admin Only */}
       <Route path="/" element={<AdminRoute><Layout /></AdminRoute>}>
         <Route index element={<DashboardPage />} />
+        <Route path="activity-log" element={<ActivityLogPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="leave" element={<LeavePage />} />

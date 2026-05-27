@@ -1,6 +1,7 @@
 import Salary from "../models/Salary.js";
 import Employee from "../models/Employee.js";
 import { createNotification } from "./notificationController.js";
+import { createLog } from "./activityLogController.js";
 
 // সব বেতন দেখুন
 export const getSalaries = async (req, res) => {
@@ -62,6 +63,12 @@ export const generateSalaries = async (req, res) => {
         message: `${month}/${year} মাসে সব কর্মীর বেতন আগেই তৈরি হয়েছে!`
       });
     }
+    await createLog(
+      req.user._id, req.user.name, req.user.role,
+      `${month}/${year} মাসের Salary Generate করেছে`,
+      "salary",
+      `${generated.length} জন কর্মীর বেতন তৈরি`
+    );
 
     res.status(201).json({
       message: `${generated.length} জন কর্মীর বেতন তৈরি হয়েছে!`,
@@ -100,6 +107,12 @@ export const paySalary = async (req, res) => {
     salary.paidAt = new Date();
     await salary.save();
 
+    await createLog(
+      req.user._id, req.user.name, req.user.role,
+      `${salary.employeeName} এর বেতন পরিশোধ করেছে`,
+      "salary",
+      `Amount: ৳${salary.netSalary}, Month: ${salary.month}/${salary.year}`
+    );
     await createNotification(
       `💰 ${salary.employeeName} এর ${salary.month}/${salary.year} মাসের বেতন ৳${salary.netSalary.toLocaleString()} পরিশোধ হয়েছে!`,
       "salary"

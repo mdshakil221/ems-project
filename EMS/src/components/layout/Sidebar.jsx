@@ -4,11 +4,13 @@ import {
   MdDashboard, MdPeople, MdAccessTime, MdEventNote,
   MdTask, MdNotifications, MdPayment, MdBarChart,
   MdStar, MdAccountCircle, MdCampaign, MdBeachAccess,
-  MdDescription
+  MdDescription, MdHistory
 } from "react-icons/md";
+import path from "node:path";
 
 const menu = [
   { path: "/", label: "Dashboard", icon: <MdDashboard size={20} /> },
+  { path: "/activity-log", label: "Activity Log", icon: <MdHistory size={20} /> },
   { path: "/admin-profile", label: "My Profile", icon: <MdAccountCircle size={20} /> },
   { path: "/employees", label: "Employees", icon: <MdPeople size={20} /> },
   { path: "/attendance", label: "Attendance", icon: <MdAccessTime size={20} /> },

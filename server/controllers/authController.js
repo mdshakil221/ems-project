@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import { v2 as cloudinary } from "cloudinary";
 import Notification from "../models/Notification.js";
 import Employee from "../models/Employee.js";
+import { createLog } from "./activityLogController.js";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
@@ -54,6 +55,13 @@ export const loginUser = async (req, res) => {
   if (!isMatch) {
     return res.status(401).json({ message: "Email বা Password ভুল!" });
   }
+  // ✅ Login log
+  await createLog(
+    user._id, user.name, user.role,
+    "Login করেছে",
+    "auth",
+    `${user.email} — ${user.role} login`
+  );
   res.json({
     _id: user._id,
     name: user.name,
@@ -132,7 +140,13 @@ export const updateProfile = async (req, res) => {
     user.phone = req.body.phone || user.phone;
 
     if (req.body.password) {
-      user.password = req.body.password;
+      // ✅ Password change log
+      await createLog(
+        user._id, user.name, user.role,
+        "Password পরিবর্তন করেছে",
+        "auth",
+        `${user.email} তার password পরিবর্তন করেছে`
+      );
 
       // ✅ Employee model এও নতুন password store করুন
       await Employee.findOneAndUpdate(

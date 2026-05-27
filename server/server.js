@@ -19,6 +19,7 @@ import performanceRoutes from "./routes/performanceRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
+import activityLogRoutes from "./routes/activityLogRoutes.js";
 
 connectDB();
 
@@ -65,6 +66,7 @@ app.use("/api/performance", performanceRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "EMS Server চলছে! 🚀" });
