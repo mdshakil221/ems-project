@@ -1,5 +1,6 @@
 import Attendance from "../models/Attendance.js";
 import { createNotification } from "./notificationController.js";
+import { createLog } from "./activityLogController.js";
 
 export const getAttendance = async (req, res) => {
   try {
@@ -13,72 +14,99 @@ export const getAttendance = async (req, res) => {
 };
 
 export const markAttendance = async (req, res) => {
-  const { employeeId, employeeName, date, checkIn, status } = req.body;
+  try {
+    const { employeeId, employeeName, date, checkIn, status } = req.body;
 
-  const existing = await Attendance.findOne({ employeeId, date });
-  if (existing) {
-    const prevStatus = existing.status;
-    existing.status = status;
-    existing.checkIn = checkIn;
-    const updated = await existing.save();
+    const existing = await Attendance.findOne({ employeeId, date });
+    if (existing) {
+      const prevStatus = existing.status;
+      existing.status = status;
+      existing.checkIn = checkIn;
+      const updated = await existing.save();
 
-    // ✅ Late notification — নতুন করে late mark হলে
-    if (status === "late" && prevStatus !== "late") {
+      // ✅ Log যোগ করো
+      await createLog(
+        req.user._id, req.user.name, req.user.role,
+        `${employeeName} এর উপস্থিতি "${status}" এ update করেছে`,
+        "attendance",
+        `Date: ${date}, CheckIn: ${checkIn || "N/A"}`
+      );
+
+      // ✅ Late notification
+      if (status === "late" && prevStatus !== "late") {
+        await createNotification(
+          `⏰ ${employeeName} আজ (${date}) দেরিতে এসেছে!`,
+          "task"
+        );
+      }
+
+      return res.json(updated);
+    }
+
+    const attendance = await Attendance.create({
+      employeeId, employeeName, date, checkIn, status
+    });
+
+    // ✅ Log যোগ করো
+    await createLog(
+      req.user._id, req.user.name, req.user.role,
+      `${employeeName} এর উপস্থিতি "${status}" চিহ্নিত করেছে`,
+      "attendance",
+      `Date: ${date}, CheckIn: ${checkIn || "N/A"}`
+    );
+
+    // ✅ Late notification
+    if (status === "late") {
       await createNotification(
         `⏰ ${employeeName} আজ (${date}) দেরিতে এসেছে!`,
         "task"
       );
     }
 
-    return res.json(updated);
+    res.status(201).json(attendance);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const attendance = await Attendance.create({
-    employeeId, employeeName, date, checkIn, status
-  });
-
-  // ✅ Late notification — প্রথমবার late mark হলে
-  if (status === "late") {
-    await createNotification(
-      `⏰ ${employeeName} আজ (${date}) দেরিতে এসেছে!`,
-      "task"
-    );
-  }
-
-  res.status(201).json(attendance);
 };
 
 export const updateAttendance = async (req, res) => {
-  const attendance = await Attendance.findById(req.params.id);
-  if (attendance) {
-    const prevStatus = attendance.status;
-    attendance.status = req.body.status || attendance.status;
-    attendance.checkIn = req.body.checkIn || attendance.checkIn;
-    attendance.checkOut = req.body.checkOut || attendance.checkOut;
-    const updated = await attendance.save();
+  try {
+    const attendance = await Attendance.findById(req.params.id);
+    if (attendance) {
+      const prevStatus = attendance.status;
+      attendance.status = req.body.status || attendance.status;
+      attendance.checkIn = req.body.checkIn || attendance.checkIn;
+      attendance.checkOut = req.body.checkOut || attendance.checkOut;
+      const updated = await attendance.save();
 
-    // ✅ Late notification — update করে late হলে
-    if (req.body.status === "late" && prevStatus !== "late") {
-      await createNotification(
-        `⏰ ${attendance.employeeName} আজ (${attendance.date}) দেরিতে এসেছে!`,
-        "task"
+      // ✅ Log যোগ করো
+      await createLog(
+        req.user._id, req.user.name, req.user.role,
+        `${attendance.employeeName} এর উপস্থিতি "${req.body.status}" এ update করেছে`,
+        "attendance",
+        `Date: ${attendance.date}`
       );
-    }
 
-    res.json(updated);
-  } else {
-    res.status(404).json({ message: "উপস্থিতি পাওয়া যায়নি!" });
+      // ✅ Late notification
+      if (req.body.status === "late" && prevStatus !== "late") {
+        await createNotification(
+          `⏰ ${attendance.employeeName} আজ (${attendance.date}) দেরিতে এসেছে!`,
+          "task"
+        );
+      }
+
+      res.json(updated);
+    } else {
+      res.status(404).json({ message: "উপস্থিতি পাওয়া যায়নি!" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
-// ✅ employeeId এর বদলে employeeName দিয়ে filter করো
+
 export const getMyAttendance = async (req, res) => {
   try {
     const { month, year } = req.query;
-
-    // ✅ Debug করতে
-    console.log("User name:", req.user.name);
-    console.log("Month:", month, "Year:", year);
-
     const filter = { employeeName: req.user.name };
 
     if (month && year) {
@@ -87,12 +115,7 @@ export const getMyAttendance = async (req, res) => {
       filter.date = { $gte: startDate, $lte: endDate };
     }
 
-    console.log("Filter:", filter);
-
     const attendance = await Attendance.find(filter).sort({ date: 1 });
-
-    console.log("Found:", attendance.length);
-
     res.json(attendance);
   } catch (error) {
     res.status(500).json({ message: error.message });
