@@ -14,7 +14,6 @@ const uploadToCloudinary = (buffer, originalname, mimetype) => {
         folder: "ems-tasks",
         resource_type: resourceType,
         public_id: `${Date.now()}-${originalname.replace(/[^a-zA-Z0-9.-]/g, "_")}`,
-        // ✅ Public access দিন
         access_mode: "public",
         type: "upload",
       },
@@ -45,6 +44,13 @@ export const createTask = async (req, res) => {
       }
     }
 
+    // ✅ Task create করুন
+    const task = await Task.create({
+      title, assignedTo, priority, status, dueDate,
+      description: description || "",
+      adminAttachments
+    });
+
     await createLog(
       req.user._id, req.user.name, req.user.role,
       `নতুন Task "${title}" তৈরি করেছে`,
@@ -66,17 +72,13 @@ export const createTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-    if (prevStatus !== "completed" && req.body.status === "completed") {
-      // ✅ Task complete log
-      await createLog(
-        req.user._id, req.user.name, req.user.role,
-        `Task "${task.title}" সম্পন্ন করেছে`,
-        "task",
-        `Assigned to: ${task.assignedTo}`
-      );
+    if (!task) {
+      return res.status(404).json({ message: "কাজ পাওয়া যায়নি!" });
     }
 
+    // ✅ prevStatus আগে declare করুন
     const prevStatus = task.status;
+
     task.title = req.body.title || task.title;
     task.assignedTo = req.body.assignedTo || task.assignedTo;
     task.priority = req.body.priority || task.priority;
@@ -100,11 +102,25 @@ export const updateTask = async (req, res) => {
 
     const updated = await task.save();
 
+    // ✅ Task complete log
     if (prevStatus !== "completed" && req.body.status === "completed") {
-      await createNotification(`✅ "${task.title}" — ${task.assignedTo} সম্পন্ন করেছে!`, "task_completed");
+      await createLog(
+        req.user._id, req.user.name, req.user.role,
+        `Task "${task.title}" সম্পন্ন করেছে`,
+        "task",
+        `Assigned to: ${task.assignedTo}`
+      );
+      await createNotification(
+        `✅ "${task.title}" — ${task.assignedTo} সম্পন্ন করেছে!`,
+        "task_completed"
+      );
     }
+
     if (prevStatus === "pending" && req.body.status === "in-progress") {
-      await createNotification(`🚀 "${task.title}" — ${task.assignedTo} শুরু করেছে!`, "task");
+      await createNotification(
+        `🚀 "${task.title}" — ${task.assignedTo} শুরু করেছে!`,
+        "task"
+      );
     }
 
     res.json(updated);
@@ -124,7 +140,6 @@ export const submitEmployeeAttachment = async (req, res) => {
       return res.status(400).json({ message: "ফাইল দিন!" });
     }
 
-    // ✅ Cloudinary তে upload করুন
     for (const file of req.files) {
       const result = await uploadToCloudinary(file.buffer, file.originalname, file.mimetype);
       task.employeeAttachments.push({
@@ -158,7 +173,6 @@ export const deleteTaskAttachment = async (req, res) => {
       return res.status(404).json({ message: "কাজ পাওয়া যায়নি!" });
     }
 
-    // ✅ Cloudinary থেকে delete
     try {
       await cloudinary.uploader.destroy(filename, { resource_type: "raw" });
       await cloudinary.uploader.destroy(filename, { resource_type: "image" });
@@ -180,16 +194,24 @@ export const deleteTaskAttachment = async (req, res) => {
 };
 
 export const getTasks = async (req, res) => {
-  const tasks = await Task.find({}).sort({ createdAt: -1 });
-  res.json(tasks);
+  try {
+    const tasks = await Task.find({}).sort({ createdAt: -1 });
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const deleteTask = async (req, res) => {
-  const task = await Task.findById(req.params.id);
-  if (task) {
-    await task.deleteOne();
-    res.json({ message: "কাজ মুছে ফেলা হয়েছে!" });
-  } else {
-    res.status(404).json({ message: "কাজ পাওয়া যায়নি!" });
+  try {
+    const task = await Task.findById(req.params.id);
+    if (task) {
+      await task.deleteOne();
+      res.json({ message: "কাজ মুছে ফেলা হয়েছে!" });
+    } else {
+      res.status(404).json({ message: "কাজ পাওয়া যায়নি!" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
