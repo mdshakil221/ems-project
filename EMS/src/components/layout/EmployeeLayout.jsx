@@ -10,6 +10,7 @@ import {
 } from "react-icons/md";
 import toast from "react-hot-toast";
 import useWindowSize from "../../hooks/useWindowSize";
+import path from "node:path";
 
 export default function EmployeeLayout() {
   const { user, logout } = useAuth();
@@ -33,6 +34,7 @@ export default function EmployeeLayout() {
     { path: "/employee/announcements", label: "Announcements", icon: <MdCampaign size={20} /> },
     { path: "/employee/holidays", label: "Holidays", icon: <MdBeachAccess size={20} /> },
     { path: "/employee/documents", label: "Documents", icon: <MdDescription size={20} /> },
+    { path: "/employee/chat", label: "Chat", icon: <MdChat size={20} />}
   ];
 
   const SidebarContent = () => (
