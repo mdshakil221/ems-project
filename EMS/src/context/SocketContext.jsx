@@ -9,13 +9,15 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
   const [socket, setSocket] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState({});
 
   useEffect(() => {
     if (user) {
-      const newSocket = io(import.meta.env.VITE_SOCKET_URL);
+      const newSocket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
       newSocket.emit("join", user._id);
 
-      // ✅ Real-time notification
+      // ✅ Notifications
       newSocket.on("new_notification", (notification) => {
         setUnreadCount(prev => prev + 1);
         toast.custom(() => (
@@ -32,7 +34,7 @@ export const SocketProvider = ({ children }) => {
         ), { duration: 4000 });
       });
 
-      // ✅ Real-time Announcement
+      // ✅ Announcements
       newSocket.on("new_announcement", (announcement) => {
         const priorityColor = {
           urgent: "#ef4444", high: "#f59e0b",
@@ -49,14 +51,53 @@ export const SocketProvider = ({ children }) => {
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
               <span style={{ fontSize: "18px" }}>📢</span>
               <span style={{ fontWeight: "700", fontSize: "14px" }}>{announcement.title}</span>
-              <span style={{
-                padding: "2px 8px", borderRadius: "20px", fontSize: "11px",
-                background: priorityColor + "22", color: priorityColor
-              }}>{announcement.priority}</span>
             </div>
             <p style={{ color: "#94a3b8", fontSize: "13px" }}>{announcement.message}</p>
           </div>
         ), { duration: 6000 });
+      });
+
+      // ✅ Online Users
+      newSocket.on("online_users", (users) => {
+        setOnlineUsers(users);
+      });
+
+      // ✅ Private Message
+      newSocket.on("new_private_message", (message) => {
+        toast.custom(() => (
+          <div style={{
+            background: "#1e293b", border: "1px solid #334155",
+            borderLeft: "4px solid #22c55e", borderRadius: "8px",
+            padding: "12px 16px", display: "flex",
+            alignItems: "center", gap: "12px",
+            color: "#f1f5f9", fontSize: "14px", maxWidth: "350px"
+          }}>
+            <span style={{ fontSize: "20px" }}>💬</span>
+            <div>
+              <p style={{ fontWeight: "600", fontSize: "13px" }}>{message.senderName}</p>
+              <p style={{ color: "#94a3b8", fontSize: "12px" }}>
+                {message.message.length > 40
+                  ? message.message.substring(0, 40) + "..."
+                  : message.message}
+              </p>
+            </div>
+          </div>
+        ), { duration: 4000 });
+      });
+
+      // ✅ Typing
+      newSocket.on("user_typing", (data) => {
+        setTypingUsers(prev => ({
+          ...prev,
+          [data.senderId]: data.isTyping ? data.senderName : null
+        }));
+      });
+
+      newSocket.on("team_user_typing", (data) => {
+        setTypingUsers(prev => ({
+          ...prev,
+          [`team_${data.senderId}`]: data.isTyping ? data.senderName : null
+        }));
       });
 
       setSocket(newSocket);
@@ -65,7 +106,10 @@ export const SocketProvider = ({ children }) => {
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ socket, unreadCount, setUnreadCount }}>
+    <SocketContext.Provider value={{
+      socket, unreadCount, setUnreadCount,
+      onlineUsers, typingUsers
+    }}>
       {children}
     </SocketContext.Provider>
   );

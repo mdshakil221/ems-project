@@ -6,7 +6,7 @@ import {
   MdDashboard, MdLogout, MdPerson,
   MdCampaign, MdBeachAccess, MdDescription,
   MdMenu, MdClose, MdTask, MdEventNote,
-  MdPayment, MdStar
+  MdPayment, MdStar, MdChat
 } from "react-icons/md";
 import toast from "react-hot-toast";
 import useWindowSize from "../../hooks/useWindowSize";

@@ -18,6 +18,7 @@ import AnnouncementsPage from "../features/announcements/pages/AnnouncementsPage
 import HolidaysPage from "../features/holidays/pages/HolidaysPage";
 import DocumentsPage from "../features/documents/pages/DocumentsPage";
 import ActivityLogPage from "../features/activityLog/pages/ActivityLogPage";
+import ChatPage from "../features/chat/pages/ChatPage";
 
 import MyTasksPage from "../pages/employee/MyTasksPage";
 import MyLeavesPage from "../pages/employee/MyLeavesPage";
@@ -68,6 +69,7 @@ export default function AppRoutes() {
         <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="holidays" element={<HolidaysPage />} />
         <Route path="documents" element={<DocumentsPage />} />
+        <Route path="chat" element={<ChatPage />} />
       </Route>
 
       {/* Employee Only */}
@@ -81,6 +83,7 @@ export default function AppRoutes() {
         <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="holidays" element={<HolidaysPage />} />
         <Route path="documents" element={<DocumentsPage />} />
+        <Route path="chat" element={<ChatPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

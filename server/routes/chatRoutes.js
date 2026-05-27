@@ -1,0 +1,16 @@
+import express from "express";
+import {
+  getPrivateMessages, getTeamMessages,
+  sendMessage, markMessagesRead, getUnreadCount
+} from "../controllers/chatController.js";
+import { protect } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+router.get("/private/:userId", protect, getPrivateMessages);
+router.get("/team", protect, getTeamMessages);
+router.post("/send", protect, sendMessage);
+router.put("/read/:userId", protect, markMessagesRead);
+router.get("/unread", protect, getUnreadCount);
+
+export default router;

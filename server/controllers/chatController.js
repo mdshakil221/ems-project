@@ -1,0 +1,91 @@
+import Message from "../models/Message.js";
+
+// Private Messages দেখুন
+export const getPrivateMessages = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const messages = await Message.find({
+      type: "private",
+      $or: [
+        { senderId: req.user._id, receiverId: userId },
+        { senderId: userId, receiverId: req.user._id }
+      ]
+    }).sort({ createdAt: 1 }).limit(100);
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Team Messages দেখুন
+export const getTeamMessages = async (req, res) => {
+  try {
+    const messages = await Message.find({ type: "team" })
+      .sort({ createdAt: 1 }).limit(100);
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Message পাঠান
+export const sendMessage = async (req, res) => {
+  try {
+    const { receiverId, receiverName, message, type } = req.body;
+    const newMessage = await Message.create({
+      senderId: req.user._id,
+      senderName: req.user.name,
+      senderRole: req.user.role,
+      receiverId: receiverId || null,
+      receiverName: receiverName || null,
+      message,
+      type: type || "private",
+      readBy: [req.user._id]
+    });
+    res.status(201).json(newMessage);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Message Read করুন
+export const markMessagesRead = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await Message.updateMany(
+      {
+        senderId: userId,
+        receiverId: req.user._id,
+        readBy: { $ne: req.user._id }
+      },
+      { $push: { readBy: req.user._id } }
+    );
+    res.json({ message: "Read করা হয়েছে!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Unread Count
+export const getUnreadCount = async (req, res) => {
+  try {
+    const counts = await Message.aggregate([
+      {
+        $match: {
+          receiverId: req.user._id,
+          readBy: { $ne: req.user._id }
+        }
+      },
+      {
+        $group: {
+          _id: "$senderId",
+          count: { $sum: 1 },
+          senderName: { $first: "$senderName" }
+        }
+      }
+    ]);
+    res.json(counts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

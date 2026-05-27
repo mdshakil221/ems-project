@@ -4,7 +4,7 @@ import {
   MdDashboard, MdPeople, MdAccessTime, MdEventNote,
   MdTask, MdNotifications, MdPayment, MdBarChart,
   MdStar, MdAccountCircle, MdCampaign, MdBeachAccess,
-  MdDescription, MdHistory
+  MdDescription, MdHistory, MdChat
 } from "react-icons/md";
 import path from "node:path";
 
@@ -23,6 +23,7 @@ const menu = [
   { path: "/documents", label: "Documents", icon: <MdDescription size={20} /> },
   { path: "/reports", label: "Reports", icon: <MdBarChart size={20} /> },
   { path: "/notifications", label: "Notifications", icon: <MdNotifications size={20} /> },
+  { path: "/chat", label: "Chat", icon: <MdChat size={20} /> },
 ];
 
 export default function Sidebar({ onClose }) {

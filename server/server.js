@@ -20,6 +20,7 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import activityLogRoutes from "./routes/activityLogRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 connectDB();
 
@@ -38,13 +39,52 @@ export const io = new Server(httpServer, {
   }
 });
 
+const onlineUsers = new Map();
+
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
+
   socket.on("join", (userId) => {
     socket.join(userId);
-    console.log(`User ${userId} joined`);
+    onlineUsers.set(userId, socket.id);
+    // ✅ সবাইকে online status জানান
+    io.emit("online_users", Array.from(onlineUsers.keys()));
+    console.log(`User ${userId} joined, online: ${onlineUsers.size}`);
   });
+
+  // ✅ Private Message
+  socket.on("private_message", (data) => {
+    const { receiverId, message } = data;
+    io.to(receiverId).emit("new_private_message", message);
+  });
+
+  // ✅ Team Message
+  socket.on("team_message", (data) => {
+    io.emit("new_team_message", data.message);
+  });
+
+  // ✅ Typing Indicator
+  socket.on("typing", (data) => {
+    io.to(data.receiverId).emit("user_typing", {
+      senderId: data.senderId,
+      senderName: data.senderName,
+      isTyping: data.isTyping
+    });
+  });
+
+  // ✅ Team Typing
+  socket.on("team_typing", (data) => {
+    socket.broadcast.emit("team_user_typing", data);
+  });
+
   socket.on("disconnect", () => {
+    // Online Users থেকে সরান
+    onlineUsers.forEach((socketId, userId) => {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+      }
+    });
+    io.emit("online_users", Array.from(onlineUsers.keys()));
     console.log("Client disconnected:", socket.id);
   });
 });
@@ -53,8 +93,9 @@ app.use(cors({
   origin: ["http://localhost:5173", "https://emsprob.netlify.app"],
   credentials: true
 }));
-app.use(express.json());
 
+
+app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
@@ -67,6 +108,7 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "EMS Server চলছে! 🚀" });
