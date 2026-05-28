@@ -498,12 +498,9 @@ export default function ChatPage() {
                   </div>
                 )}
 
-                <div
-                  style={{
-                    maxWidth: "65%",
-                    position: "relative"
-                  }}
-                >
+                {/* Message Container */}
+                <div style={{ maxWidth: "65%", position: "relative" }}>
+
                   {/* Sender Name */}
                   {!isMe && activeTab === "team" && (
                     <p style={{ color: "#94a3b8", fontSize: "11px", marginBottom: "2px" }}>
@@ -511,178 +508,130 @@ export default function ChatPage() {
                     </p>
                   )}
 
-                  {/* Message Bubble */}
-                  <div style={{
-                    padding: "10px 14px",
-                    background: isMe ? "#6366f1" : "#1e293b",
-                    borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    border: isMe ? "none" : "1px solid #334155",
-                    maxWidth: "300px",
-                    position: "relative",
-                  }}>
+                  {/* ✅ Bubble + 3 dot একসাথে */}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
 
+                    {/* Message Bubble */}
                     <div style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      marginBottom: "4px"
+                      padding: "10px 14px",
+                      background: isMe ? "#6366f1" : "#1e293b",
+                      borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      border: isMe ? "none" : "1px solid #334155",
+                      flex: 1
                     }}>
+                      {/* ✅ Attachment */}
+                      {msg.attachment && (
+                        <div style={{ marginBottom: msg.message ? "8px" : "0" }}>
+                          {msg.attachment.fileType === "image" ? (
+                            // ✅ Image Preview
+                            <img
+                              src={msg.attachment.url}
+                              alt={msg.attachment.originalName}
+                              style={{
+                                maxWidth: "100%", borderRadius: "8px",
+                                cursor: "pointer", display: "block"
+                              }}
+                              onClick={() => window.open(msg.attachment.url, "_blank")}
+                            />
+                          ) : (
+                            // ✅ File Download
+
+                            <a href={msg.attachment.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: "flex", alignItems: "center", gap: "8px",
+                                padding: "8px 12px",
+                                background: isMe ? "#ffffff22" : "#0f172a",
+                                borderRadius: "8px", textDecoration: "none",
+                                border: `1px solid ${isMe ? "#ffffff33" : "#334155"}`
+                              }}>
+                              <span style={{ fontSize: "20px" }}>
+                                {msg.attachment.fileType === "pdf" ? "📄" :
+                                  msg.attachment.fileType === "doc" ? "📝" : "📎"}
+                              </span>
+                              <div>
+                                <p style={{
+                                  color: isMe ? "white" : "#f1f5f9",
+                                  fontSize: "12px", fontWeight: "600",
+                                  overflow: "hidden", textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap", maxWidth: "180px"
+                                }}>
+                                  {msg.attachment.originalName}
+                                </p>
+                                <p style={{ color: isMe ? "#ffffff88" : "#64748b", fontSize: "11px" }}>
+                                  {msg.attachment.size
+                                    ? `${(msg.attachment.size / 1024).toFixed(1)} KB`
+                                    : ""}
+                                </p>
+                              </div>
+                              <span style={{ color: isMe ? "white" : "#6366f1", fontSize: "16px" }}>⬇️</span>
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Message Text */}
+                      {msg.message && (
+                        <p style={{
+                          color: isMe ? "white" : "#f1f5f9",
+                          fontSize: "14px", lineHeight: "1.5",
+                          wordBreak: "break-word"
+                        }}>{msg.message}</p>
+                      )}
                     </div>
-                    {isMe && !msg.isDeletedForEveryone && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "8px",
-                          right: "8px"
-                        }}
-                      >
-                        {/* 3 Dot Button */}
+
+                    {/* ✅ 3 Dot Menu — Bubble এর বাইরে */}
+                    {isMe && (
+                      <div style={{ position: "relative", flexShrink: 0 }}>
                         <button
-                          onClick={() =>
-                            setOpenMenuId(openMenuId === msg._id ? null : msg._id)
-                          }
+                          onClick={() => setOpenMenuId(openMenuId === msg._id ? null : msg._id)}
                           style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#ffffffaa",
-                            cursor: "pointer",
-                            padding: "2px"
-                          }}
-                        >
+                            background: "transparent", border: "none",
+                            color: "#94a3b8", cursor: "pointer",
+                            padding: "4px", marginTop: "6px",
+                            display: "flex", alignItems: "center"
+                          }}>
                           <MdMoreVert size={18} />
                         </button>
 
-                        {/* Dropdown Menu */}
+                        {/* Dropdown */}
                         {openMenuId === msg._id && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: "24px",
-                              right: "0",
-                              background: "#1e293b",
-                              border: "1px solid #334155",
-                              borderRadius: "8px",
-                              minWidth: "160px",
-                              overflow: "hidden",
-                              zIndex: 999,
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
-                            }}
-                          >
+                          <div style={{
+                            position: "absolute",
+                            top: "28px",
+                            right: "0",
+                            background: "#1e293b",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            minWidth: "160px",
+                            overflow: "hidden",
+                            zIndex: 999,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                          }}>
                             <button
-                              onClick={() => {
-                                handleDeleteForMe(msg._id);
-                                setOpenMenuId(null);
-                              }}
+                              onClick={() => { handleDeleteForMe(msg._id); setOpenMenuId(null); }}
                               style={{
-                                width: "100%",
-                                padding: "10px 14px",
-                                background: "transparent",
-                                border: "none",
-                                color: "#f1f5f9",
-                                textAlign: "left",
-                                cursor: "pointer"
-                              }}
-                            >
-                              Delete For Me
+                                width: "100%", padding: "10px 14px",
+                                background: "transparent", border: "none",
+                                color: "#f1f5f9", textAlign: "left",
+                                cursor: "pointer", fontSize: "13px"
+                              }}>
+                              🗑️ Delete For Me
                             </button>
-
                             <button
-                              onClick={() => {
-                                handleDeleteForEveryone(msg._id);
-                                setOpenMenuId(null);
-                              }}
+                              onClick={() => { handleDeleteForEveryone(msg._id); setOpenMenuId(null); }}
                               style={{
-                                width: "100%",
-                                padding: "10px 14px",
-                                background: "transparent",
-                                border: "none",
-                                color: "#ef4444",
-                                textAlign: "left",
-                                cursor: "pointer"
-                              }}
-                            >
-                              Delete For Everyone
+                                width: "100%", padding: "10px 14px",
+                                background: "transparent", border: "none",
+                                color: "#ef4444", textAlign: "left",
+                                cursor: "pointer", fontSize: "13px"
+                              }}>
+                              🗑️ Delete For Everyone
                             </button>
                           </div>
                         )}
                       </div>
-                    )}
-
-                    {/* ✅ Attachment */}
-                    {msg.attachment && (
-                      <div style={{ marginBottom: msg.message ? "8px" : "0" }}>
-                        {msg.attachment.fileType === "image" ? (
-                          // ✅ Image Preview
-                          <img
-                            src={msg.attachment.url}
-                            alt={msg.attachment.originalName}
-                            style={{
-                              maxWidth: "100%", borderRadius: "8px",
-                              cursor: "pointer", display: "block"
-                            }}
-                            onClick={() => window.open(msg.attachment.url, "_blank")}
-                          />
-                        ) : (
-                          // ✅ File Download
-
-                          <a href={msg.attachment.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              display: "flex", alignItems: "center", gap: "8px",
-                              padding: "8px 12px",
-                              background: isMe ? "#ffffff22" : "#0f172a",
-                              borderRadius: "8px", textDecoration: "none",
-                              border: `1px solid ${isMe ? "#ffffff33" : "#334155"}`
-                            }}>
-                            <span style={{ fontSize: "20px" }}>
-                              {msg.attachment.fileType === "pdf" ? "📄" :
-                                msg.attachment.fileType === "doc" ? "📝" : "📎"}
-                            </span>
-                            <div>
-                              <p style={{
-                                color: isMe ? "white" : "#f1f5f9",
-                                fontSize: "12px", fontWeight: "600",
-                                overflow: "hidden", textOverflow: "ellipsis",
-                                whiteSpace: "nowrap", maxWidth: "180px"
-                              }}>
-                                {msg.attachment.originalName}
-                              </p>
-                              <p style={{ color: isMe ? "#ffffff88" : "#64748b", fontSize: "11px" }}>
-                                {msg.attachment.size
-                                  ? `${(msg.attachment.size / 1024).toFixed(1)} KB`
-                                  : ""}
-                              </p>
-                            </div>
-                            <span style={{ color: isMe ? "white" : "#6366f1", fontSize: "16px" }}>⬇️</span>
-                          </a>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Message Text */}
-                    {msg?.isDeletedForEveryone ? (
-
-                      <p style={{
-                        color: "#94a3b8",
-                        fontStyle: "italic",
-                        fontSize: "13px"
-                      }}>
-                        🚫 This message was deleted
-                      </p>
-
-                    ) : (
-                      <>
-                        {msg.message && (
-                          <p style={{
-                            color: isMe ? "white" : "#f1f5f9",
-                            fontSize: "14px",
-                            lineHeight: "1.5",
-                            wordBreak: "break-word"
-                          }}>
-                            {msg.message}
-                          </p>
-                        )}
-                      </>
                     )}
                   </div>
 
