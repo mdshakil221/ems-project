@@ -134,7 +134,6 @@ export default function ChatPage() {
     try {
       setSending(true);
 
-      // ✅ FormData ব্যবহার করুন
       const formData = new FormData();
       formData.append("type", activeTab === "team" ? "team" : "private");
       if (newMessage.trim()) formData.append("message", newMessage);
@@ -148,11 +147,14 @@ export default function ChatPage() {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-      setMessages(prev => [...prev, data]);
+      // ✅ State এ directly add করবো না
+      // Socket event থেকেই আসবে — duplicate হবে না
+
       setNewMessage("");
       setSelectedFile(null);
       setFilePreview(null);
 
+      // ✅ Socket এ emit করো — এটাই state update করবে
       if (activeTab === "team") {
         socket?.emit("team_message", { message: data });
       } else {
@@ -161,6 +163,7 @@ export default function ChatPage() {
           message: data
         });
       }
+
     } catch (error) {
       toast.error("Message পাঠানো ব্যর্থ!");
     } finally {
