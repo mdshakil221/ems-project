@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import API from "../../../api/axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useSocket } from "../../../context/SocketContext";
-import { MdSend, MdPeople, MdPerson, MdCircle } from "react-icons/md";
+import { MdSend, MdPeople, MdPerson, MdCircle, MdMoreVert } from "react-icons/md";
 import toast from "react-hot-toast";
 
 export default function ChatPage() {
@@ -22,7 +22,8 @@ export default function ChatPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const [hoveredMessage, setHoveredMessage] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
 
   useEffect(() => {
     fetchUsers();
@@ -498,8 +499,6 @@ export default function ChatPage() {
                 )}
 
                 <div
-                  onMouseEnter={() => setHoveredMessage(msg._id)}
-                  onMouseLeave={() => setHoveredMessage(null)}
                   style={{
                     maxWidth: "65%",
                     position: "relative"
@@ -518,7 +517,8 @@ export default function ChatPage() {
                     background: isMe ? "#6366f1" : "#1e293b",
                     borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                     border: isMe ? "none" : "1px solid #334155",
-                    maxWidth: "300px"
+                    maxWidth: "300px",
+                    position: "relative",
                   }}>
 
                     <div style={{
@@ -527,6 +527,85 @@ export default function ChatPage() {
                       marginBottom: "4px"
                     }}>
                     </div>
+                    {isMe && !msg.isDeletedForEveryone && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "8px",
+                          right: "8px"
+                        }}
+                      >
+                        {/* 3 Dot Button */}
+                        <button
+                          onClick={() =>
+                            setOpenMenuId(openMenuId === msg._id ? null : msg._id)
+                          }
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#ffffffaa",
+                            cursor: "pointer",
+                            padding: "2px"
+                          }}
+                        >
+                          <MdMoreVert size={18} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {openMenuId === msg._id && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "24px",
+                              right: "0",
+                              background: "#1e293b",
+                              border: "1px solid #334155",
+                              borderRadius: "8px",
+                              minWidth: "160px",
+                              overflow: "hidden",
+                              zIndex: 999,
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                            }}
+                          >
+                            <button
+                              onClick={() => {
+                                handleDeleteForMe(msg._id);
+                                setOpenMenuId(null);
+                              }}
+                              style={{
+                                width: "100%",
+                                padding: "10px 14px",
+                                background: "transparent",
+                                border: "none",
+                                color: "#f1f5f9",
+                                textAlign: "left",
+                                cursor: "pointer"
+                              }}
+                            >
+                              Delete For Me
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                handleDeleteForEveryone(msg._id);
+                                setOpenMenuId(null);
+                              }}
+                              style={{
+                                width: "100%",
+                                padding: "10px 14px",
+                                background: "transparent",
+                                border: "none",
+                                color: "#ef4444",
+                                textAlign: "left",
+                                cursor: "pointer"
+                              }}
+                            >
+                              Delete For Everyone
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* ✅ Attachment */}
                     {msg.attachment && (
@@ -606,53 +685,6 @@ export default function ChatPage() {
                       </>
                     )}
                   </div>
-
-                  {/* Hover Delete Menu */}
-                  {isMe &&
-                    hoveredMessage === msg._id &&
-                    !msg.isDeletedForEveryone && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "-35px",
-                          right: "0",
-                          background: "#1e293b",
-                          border: "1px solid #334155",
-                          borderRadius: "8px",
-                          padding: "6px 10px",
-                          display: "flex",
-                          gap: "10px",
-                          zIndex: 999,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
-                        }}
-                      >
-                        <button
-                          onClick={() => handleDeleteForMe(msg._id)}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#94a3b8",
-                            fontSize: "11px",
-                            cursor: "pointer"
-                          }}
-                        >
-                          Delete For Me
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteForEveryone(msg._id)}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#ef4444",
-                            fontSize: "11px",
-                            cursor: "pointer"
-                          }}
-                        >
-                          Delete For Everyone
-                        </button>
-                      </div>
-                    )}
 
                   {/* Time */}
                   <p style={{
