@@ -18,7 +18,7 @@ router.put("/profile", protect, updateProfile);
 router.post("/profile/image", protect, upload.single("profileImage"), uploadProfileImage);
 
 // ✅ Admin Routes
-router.get("/users", protect, adminOnly, getAllUsers);
+router.get("/users", protect, getAllUsers);
 router.put("/users/:id/toggle", protect, adminOnly, toggleUserStatus);
 router.put("/users/:id/reset-password", protect, adminOnly, resetUserPassword);
 router.delete("/users/:id", protect, adminOnly, deleteUser);
