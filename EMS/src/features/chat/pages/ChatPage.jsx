@@ -19,6 +19,9 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef(null);
   const selectedUserRef = useRef(null);
   const activeTabRef = useRef("team");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchUsers();
@@ -125,28 +128,32 @@ export default function ChatPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedFile) return;
     try {
       setSending(true);
-      const payload = activeTab === "team"
-        ? { message: newMessage, type: "team" }
-        : {
-          message: newMessage,
-          type: "private",
-          receiverId: selectedUser._id,
-          receiverName: selectedUser.name
-        };
 
-      const { data } = await API.post("/chat/send", payload);
+      // ✅ FormData ব্যবহার করুন
+      const formData = new FormData();
+      formData.append("type", activeTab === "team" ? "team" : "private");
+      if (newMessage.trim()) formData.append("message", newMessage);
+      if (activeTab === "private" && selectedUser) {
+        formData.append("receiverId", selectedUser._id);
+        formData.append("receiverName", selectedUser.name);
+      }
+      if (selectedFile) formData.append("file", selectedFile);
 
-      // ✅ নিজের message তাৎক্ষণিক দেখান
+      const { data } = await API.post("/chat/send", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
       setMessages(prev => [...prev, data]);
       setNewMessage("");
+      setSelectedFile(null);
+      setFilePreview(null);
 
       if (activeTab === "team") {
         socket?.emit("team_message", { message: data });
       } else {
-        // ✅ Receiver এর _id String এ convert করুন
         socket?.emit("private_message", {
           receiverId: selectedUser._id.toString(),
           message: data
@@ -226,6 +233,28 @@ export default function ChatPage() {
     setSelectedUser(null);
     selectedUserRef.current = null;  // ← যোগ করো
     fetchTeamMessages();
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // ✅ 10MB check
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("ফাইল সর্বোচ্চ 10MB হতে পারবে!");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // ✅ Image preview
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => setFilePreview(e.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
   };
 
   return (
@@ -430,19 +459,75 @@ export default function ChatPage() {
                       {msg.senderName}
                     </p>
                   )}
-
                   {/* Message Bubble */}
                   <div style={{
                     padding: "10px 14px",
                     background: isMe ? "#6366f1" : "#1e293b",
                     borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    border: isMe ? "none" : "1px solid #334155"
+                    border: isMe ? "none" : "1px solid #334155",
+                    maxWidth: "300px"
                   }}>
-                    <p style={{
-                      color: isMe ? "white" : "#f1f5f9",
-                      fontSize: "14px", lineHeight: "1.5",
-                      wordBreak: "break-word"
-                    }}>{msg.message}</p>
+
+                    {/* ✅ Attachment */}
+                    {msg.attachment && (
+                      <div style={{ marginBottom: msg.message ? "8px" : "0" }}>
+                        {msg.attachment.fileType === "image" ? (
+                          // ✅ Image Preview
+                          <img
+                            src={msg.attachment.url}
+                            alt={msg.attachment.originalName}
+                            style={{
+                              maxWidth: "100%", borderRadius: "8px",
+                              cursor: "pointer", display: "block"
+                            }}
+                            onClick={() => window.open(msg.attachment.url, "_blank")}
+                          />
+                        ) : (
+                          // ✅ File Download
+
+                          <a href={msg.attachment.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "flex", alignItems: "center", gap: "8px",
+                              padding: "8px 12px",
+                              background: isMe ? "#ffffff22" : "#0f172a",
+                              borderRadius: "8px", textDecoration: "none",
+                              border: `1px solid ${isMe ? "#ffffff33" : "#334155"}`
+                            }}>
+                            <span style={{ fontSize: "20px" }}>
+                              {msg.attachment.fileType === "pdf" ? "📄" :
+                                msg.attachment.fileType === "doc" ? "📝" : "📎"}
+                            </span>
+                            <div>
+                              <p style={{
+                                color: isMe ? "white" : "#f1f5f9",
+                                fontSize: "12px", fontWeight: "600",
+                                overflow: "hidden", textOverflow: "ellipsis",
+                                whiteSpace: "nowrap", maxWidth: "180px"
+                              }}>
+                                {msg.attachment.originalName}
+                              </p>
+                              <p style={{ color: isMe ? "#ffffff88" : "#64748b", fontSize: "11px" }}>
+                                {msg.attachment.size
+                                  ? `${(msg.attachment.size / 1024).toFixed(1)} KB`
+                                  : ""}
+                              </p>
+                            </div>
+                            <span style={{ color: isMe ? "white" : "#6366f1", fontSize: "16px" }}>⬇️</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Message Text */}
+                    {msg.message && (
+                      <p style={{
+                        color: isMe ? "white" : "#f1f5f9",
+                        fontSize: "14px", lineHeight: "1.5",
+                        wordBreak: "break-word"
+                      }}>{msg.message}</p>
+                    )}
                   </div>
 
                   {/* Time */}
@@ -486,38 +571,103 @@ export default function ChatPage() {
 
         {/* Input Area */}
         {(activeTab === "team" || selectedUser) && (
-          <div style={{
-            padding: "16px", borderTop: "1px solid #334155",
-            display: "flex", gap: "10px", alignItems: "flex-end"
-          }}>
-            <textarea
-              value={newMessage}
-              onChange={handleTyping}
-              onKeyPress={handleKeyPress}
-              placeholder={activeTab === "team" ? "Team কে Message লিখুন..." : `${selectedUser?.name} কে Message লিখুন...`}
-              rows={1}
-              style={{
-                flex: 1, padding: "12px 16px",
-                background: "#1e293b", border: "1px solid #334155",
-                borderRadius: "12px", color: "#f1f5f9",
-                fontSize: "14px", outline: "none",
-                resize: "none", lineHeight: "1.5",
-                maxHeight: "120px", overflowY: "auto"
-              }}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={sending || !newMessage.trim()}
-              style={{
-                width: "44px", height: "44px",
-                background: newMessage.trim() ? "#6366f1" : "#334155",
-                border: "none", borderRadius: "12px",
-                color: "white", cursor: newMessage.trim() ? "pointer" : "not-allowed",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, transition: "background 0.2s"
+          <div style={{ padding: "16px", borderTop: "1px solid #334155" }}>
+
+            {/* ✅ File Preview */}
+            {selectedFile && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "10px 14px", background: "#1e293b",
+                borderRadius: "8px", marginBottom: "10px",
+                border: "1px solid #334155"
               }}>
-              <MdSend size={20} />
-            </button>
+                {filePreview ? (
+                  <img src={filePreview} alt="preview"
+                    style={{ width: "40px", height: "40px", borderRadius: "6px", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "24px" }}>
+                    {selectedFile.name.endsWith(".pdf") ? "📄" :
+                      selectedFile.name.endsWith(".doc") || selectedFile.name.endsWith(".docx") ? "📝" : "📎"}
+                  </span>
+                )}
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                  <p style={{
+                    color: "#f1f5f9", fontSize: "13px",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                  }}>{selectedFile.name}</p>
+                  <p style={{ color: "#94a3b8", fontSize: "11px" }}>
+                    {(selectedFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                {/* ✅ Remove File */}
+                <button
+                  onClick={() => { setSelectedFile(null); setFilePreview(null); }}
+                  style={{
+                    background: "#ef444422", border: "none", borderRadius: "6px",
+                    color: "#ef4444", cursor: "pointer", padding: "4px 8px",
+                    fontSize: "12px"
+                  }}>✕</button>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+              {/* ✅ File Button */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*,.pdf,.doc,.docx,.xlsx,.zip"
+                style={{ display: "none" }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: "44px", height: "44px",
+                  background: selectedFile ? "#6366f122" : "#1e293b",
+                  border: `1px solid ${selectedFile ? "#6366f1" : "#334155"}`,
+                  borderRadius: "12px", color: selectedFile ? "#6366f1" : "#94a3b8",
+                  cursor: "pointer", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  flexShrink: 0, fontSize: "20px"
+                }}>
+                📎
+              </button>
+
+              {/* Text Input */}
+              <textarea
+                value={newMessage}
+                onChange={handleTyping}
+                onKeyDown={handleKeyPress}
+                placeholder={activeTab === "team"
+                  ? "Team কে Message লিখুন..."
+                  : `${selectedUser?.name} কে Message লিখুন...`}
+                rows={1}
+                style={{
+                  flex: 1, padding: "12px 16px",
+                  background: "#1e293b", border: "1px solid #334155",
+                  borderRadius: "12px", color: "#f1f5f9",
+                  fontSize: "14px", outline: "none",
+                  resize: "none", lineHeight: "1.5",
+                  maxHeight: "120px", overflowY: "auto"
+                }}
+              />
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={sending || (!newMessage.trim() && !selectedFile)}
+                style={{
+                  width: "44px", height: "44px",
+                  background: (newMessage.trim() || selectedFile) ? "#6366f1" : "#334155",
+                  border: "none", borderRadius: "12px",
+                  color: "white",
+                  cursor: (newMessage.trim() || selectedFile) ? "pointer" : "not-allowed",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                <MdSend size={20} />
+              </button>
+            </div>
           </div>
         )}
       </div>

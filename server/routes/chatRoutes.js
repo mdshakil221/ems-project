@@ -4,12 +4,19 @@ import {
   sendMessage, markMessagesRead, getUnreadCount
 } from "../controllers/chatController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { upload } from "../config/cloudinary.js";
+
 
 const router = express.Router();
 
 router.get("/private/:userId", protect, getPrivateMessages);
 router.get("/team", protect, getTeamMessages);
-router.post("/send", protect, sendMessage);
+router.post(
+  "/send",
+  protect,
+  upload.single("file"),
+  sendMessage
+);
 router.put("/read/:userId", protect, markMessagesRead);
 router.get("/unread", protect, getUnreadCount);
 

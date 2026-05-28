@@ -102,6 +102,7 @@ app.use(cors({
 
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
@@ -115,6 +116,7 @@ app.use("/api/holidays", holidayRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/chat", chatRoutes);
+
 
 app.get("/", (req, res) => {
   res.json({ message: "EMS Server চলছে! 🚀" });
