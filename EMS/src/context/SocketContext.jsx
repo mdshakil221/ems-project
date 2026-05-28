@@ -15,7 +15,10 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       const newSocket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
-      newSocket.emit("join", user._id);
+      newSocket.on("connect", () => {
+        newSocket.emit("join", user._id.toString());
+        console.log("Socket connected, joined as:", user._id.toString());
+      });
 
       // ✅ Notifications
       newSocket.on("new_notification", (notification) => {

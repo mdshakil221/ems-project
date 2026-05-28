@@ -55,8 +55,14 @@ io.on("connection", (socket) => {
   // ✅ Private Message
   socket.on("private_message", (data) => {
     const { receiverId, message } = data;
-    io.to(receiverId).emit("new_private_message", message);
-    console.log(`Private message sent to ${receiverId}`);
+
+    // ✅ String এ convert করে room এ পাঠাও
+    const receiverRoom = receiverId.toString();
+    console.log(`Sending to room: ${receiverRoom}`);
+    console.log(`Online users:`, Array.from(onlineUsers.keys()));
+
+    io.to(receiverRoom).emit("new_private_message", message);
+    console.log(`Private message sent to ${receiverRoom}`);
   });
 
   // ✅ Team Message
