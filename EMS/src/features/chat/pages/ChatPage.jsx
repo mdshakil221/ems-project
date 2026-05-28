@@ -17,6 +17,8 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const selectedUserRef = useRef(null);
+  const activeTabRef = useRef("team");
 
   useEffect(() => {
     fetchUsers();
@@ -31,21 +33,30 @@ export default function ChatPage() {
   useEffect(() => {
     if (!socket) return;
 
+    // ✅ এটা করো
     socket.on("new_team_message", (message) => {
-      if (activeTab === "team") {
+      if (activeTabRef.current === "team") {  // ← ref ব্যবহার করো
         setMessages(prev => [...prev, message]);
       }
     });
 
     socket.on("new_private_message", (message) => {
       setMessages(prev => {
-        if (
-          activeTab === "private" &&
-          selectedUser &&
-          (message.senderId === selectedUser._id ||
-            message.senderId?.toString() === selectedUser._id?.toString())
-        ) {
-          return [...prev, message];
+        if (activeTabRef.current === "private" && selectedUserRef.current) {
+          const senderId = message.senderId?._id || message.senderId;
+          const receiverId = message.receiverId?._id || message.receiverId;
+          const currentUserId = user._id;
+          const selectedUserId = selectedUserRef.current._id;
+
+          const isMatch =
+            (senderId?.toString() === selectedUserId?.toString() &&
+              receiverId?.toString() === currentUserId?.toString()) ||
+            (senderId?.toString() === currentUserId?.toString() &&
+              receiverId?.toString() === selectedUserId?.toString());
+
+          if (isMatch) {
+            return [...prev, message];
+          }
         }
         return prev;
       });
@@ -103,47 +114,50 @@ export default function ChatPage() {
     }
   };
 
+  // ✅ selectedUser change হলে ref update করো
   const handleSelectUser = (u) => {
     setSelectedUser(u);
+    selectedUserRef.current = u;  // ← যোগ করো
     setActiveTab("private");
-    setMessages([]); // ✅ আগের messages clear করুন
+    activeTabRef.current = "private";  // ← যোগ করো
+    setMessages([]);
     fetchPrivateMessages(u._id);
   };
 
- const handleSendMessage = async () => {
-  if (!newMessage.trim()) return;
-  try {
-    setSending(true);
-    const payload = activeTab === "team"
-      ? { message: newMessage, type: "team" }
-      : {
-        message: newMessage,
-        type: "private",
-        receiverId: selectedUser._id,
-        receiverName: selectedUser.name
-      };
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    try {
+      setSending(true);
+      const payload = activeTab === "team"
+        ? { message: newMessage, type: "team" }
+        : {
+          message: newMessage,
+          type: "private",
+          receiverId: selectedUser._id,
+          receiverName: selectedUser.name
+        };
 
-    const { data } = await API.post("/chat/send", payload);
+      const { data } = await API.post("/chat/send", payload);
 
-    // ✅ নিজের message তাৎক্ষণিক দেখান
-    setMessages(prev => [...prev, data]);
-    setNewMessage("");
+      // ✅ নিজের message তাৎক্ষণিক দেখান
+      setMessages(prev => [...prev, data]);
+      setNewMessage("");
 
-    if (activeTab === "team") {
-      socket?.emit("team_message", { message: data });
-    } else {
-      // ✅ Receiver এর _id String এ convert করুন
-      socket?.emit("private_message", {
-        receiverId: selectedUser._id.toString(),
-        message: data
-      });
+      if (activeTab === "team") {
+        socket?.emit("team_message", { message: data });
+      } else {
+        // ✅ Receiver এর _id String এ convert করুন
+        socket?.emit("private_message", {
+          receiverId: selectedUser._id.toString(),
+          message: data
+        });
+      }
+    } catch (error) {
+      toast.error("Message পাঠানো ব্যর্থ!");
+    } finally {
+      setSending(false);
     }
-  } catch (error) {
-    toast.error("Message পাঠানো ব্যর্থ!");
-  } finally {
-    setSending(false);
-  }
-};
+  };
 
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
@@ -205,6 +219,15 @@ export default function ChatPage() {
     return null;
   };
 
+  // ✅ setActiveTab এর জায়গায় এটা করো
+  const handleTeamChat = () => {
+    setActiveTab("team");
+    activeTabRef.current = "team";  // ← যোগ করো
+    setSelectedUser(null);
+    selectedUserRef.current = null;  // ← যোগ করো
+    fetchTeamMessages();
+  };
+
   return (
     <div style={{ display: "flex", height: "calc(100vh - 120px)", gap: "0" }}>
 
@@ -223,7 +246,7 @@ export default function ChatPage() {
 
         {/* Team Chat Button */}
         <div
-          onClick={() => { setActiveTab("team"); setSelectedUser(null); fetchTeamMessages(); }}
+          onClick={handleTeamChat}
           style={{
             padding: "14px 16px", cursor: "pointer",
             background: activeTab === "team" ? "#0f172a" : "transparent",
