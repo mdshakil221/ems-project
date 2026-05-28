@@ -476,8 +476,6 @@ export default function ChatPage() {
             return (
               <div
                 key={msg._id || index}
-                onMouseEnter={() => setHoveredMessage(msg._id)}
-                onMouseLeave={() => setHoveredMessage(null)}
                 style={{
                   display: "flex",
                   justifyContent: isMe ? "flex-end" : "flex-start",
@@ -499,7 +497,14 @@ export default function ChatPage() {
                   </div>
                 )}
 
-                <div style={{ maxWidth: "65%" }}>
+                <div
+                  onMouseEnter={() => setHoveredMessage(msg._id)}
+                  onMouseLeave={() => setHoveredMessage(null)}
+                  style={{
+                    maxWidth: "65%",
+                    position: "relative"
+                  }}
+                >
                   {/* Sender Name */}
                   {!isMe && activeTab === "team" && (
                     <p style={{ color: "#94a3b8", fontSize: "11px", marginBottom: "2px" }}>
