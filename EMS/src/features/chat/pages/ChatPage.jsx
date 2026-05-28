@@ -498,6 +498,7 @@ export default function ChatPage() {
                       {msg.senderName}
                     </p>
                   )}
+
                   {/* Message Bubble */}
                   <div style={{
                     padding: "10px 14px",
@@ -506,40 +507,49 @@ export default function ChatPage() {
                     border: isMe ? "none" : "1px solid #334155",
                     maxWidth: "300px"
                   }}>
+                    {/* Delete Actions */}
+                    {isMe && !msg.isDeletedForEveryone && (
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: "10px",
+                        marginBottom: "6px"
+                      }}>
 
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      marginBottom: "4px"
-                    }}>
-                      <button
-                        onClick={() => handleDeleteForMe(msg._id)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: "#94a3b8",
-                          cursor: "pointer",
-                          fontSize: "11px",
-                          marginRight: "6px"
-                        }}
-                      >
-                        Delete For Me
-                      </button>
+                        <button
+                          onClick={() => handleDeleteForMe(msg._id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#94a3b8",
+                            fontSize: "11px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Delete For Me
+                        </button>
 
-                      {isMe && (
                         <button
                           onClick={() => handleDeleteForEveryone(msg._id)}
                           style={{
                             background: "transparent",
                             border: "none",
                             color: "#ef4444",
-                            cursor: "pointer",
-                            fontSize: "11px"
+                            fontSize: "11px",
+                            cursor: "pointer"
                           }}
                         >
                           Delete For Everyone
                         </button>
-                      )}
+
+                      </div>
+                    )}
+
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      marginBottom: "4px"
+                    }}>
                     </div>
 
                     {/* ✅ Attachment */}
