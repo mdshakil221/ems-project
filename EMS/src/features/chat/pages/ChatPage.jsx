@@ -595,7 +595,7 @@ export default function ChatPage() {
                     )}
 
                     {/* Message Text */}
-                    {msg.isDeletedForEveryone ? (
+                    {msg?.isDeletedForEveryone ? (
 
                       <p style={{
                         color: "#94a3b8",
@@ -606,7 +606,6 @@ export default function ChatPage() {
                       </p>
 
                     ) : (
-
                       <>
                         {msg.message && (
                           <p style={{
@@ -619,7 +618,6 @@ export default function ChatPage() {
                           </p>
                         )}
                       </>
-
                     )}
                   </div>
 

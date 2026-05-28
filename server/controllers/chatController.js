@@ -215,6 +215,9 @@ export const deleteMessageForEveryone = async (req, res) => {
       );
     }
 
+    // ✅ Message hide
+    message.message = "";
+    message.attachment = null;
     message.isDeletedForEveryone = true;
     message.deletedAt = new Date();
 
