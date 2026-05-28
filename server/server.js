@@ -46,7 +46,7 @@ io.on("connection", (socket) => {
 
   socket.on("join", (userId) => {
     socket.join(userId);
-    onlineUsers.set(userId, socket.id);
+    onlineUsers.set(userId.toString(), socket.id);
     // ✅ সবাইকে online status জানান
     io.emit("online_users", Array.from(onlineUsers.keys()));
     console.log(`User ${userId} joined, online: ${onlineUsers.size}`);
@@ -56,6 +56,7 @@ io.on("connection", (socket) => {
   socket.on("private_message", (data) => {
     const { receiverId, message } = data;
     io.to(receiverId).emit("new_private_message", message);
+    console.log(`Private message sent to ${receiverId}`);
   });
 
   // ✅ Team Message
@@ -78,7 +79,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    // Online Users থেকে সরান
     onlineUsers.forEach((socketId, userId) => {
       if (socketId === socket.id) {
         onlineUsers.delete(userId);

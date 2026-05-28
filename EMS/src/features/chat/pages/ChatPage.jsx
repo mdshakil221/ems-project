@@ -38,9 +38,17 @@ export default function ChatPage() {
     });
 
     socket.on("new_private_message", (message) => {
-      if (activeTab === "private" && selectedUser?._id === message.senderId) {
-        setMessages(prev => [...prev, message]);
-      }
+      setMessages(prev => {
+        if (
+          activeTab === "private" &&
+          selectedUser &&
+          (message.senderId === selectedUser._id ||
+            message.senderId?.toString() === selectedUser._id?.toString())
+        ) {
+          return [...prev, message];
+        }
+        return prev;
+      });
     });
 
     return () => {
@@ -56,11 +64,14 @@ export default function ChatPage() {
   const fetchUsers = async () => {
     try {
       if (user?.role === "admin") {
-        const { data } = await API.get("/employees");
-        setUsers(data);
-      } else {
+        // ✅ Admin দেখবে সব Employee
         const { data } = await API.get("/auth/users");
-        setUsers(data.filter(u => u.role === "admin"));
+        setUsers(data.filter(u => u._id !== user._id));
+      } else {
+        // ✅ Employee দেখবে Admin কে
+        const { data } = await API.get("/auth/users");
+        const admins = data.filter(u => u.role === "admin");
+        setUsers(admins);
       }
     } catch (error) {
       console.error(error);
@@ -95,52 +106,44 @@ export default function ChatPage() {
   const handleSelectUser = (u) => {
     setSelectedUser(u);
     setActiveTab("private");
+    setMessages([]); // ✅ আগের messages clear করুন
     fetchPrivateMessages(u._id);
   };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    try {
-      setSending(true);
-      const payload = activeTab === "team"
-        ? { message: newMessage, type: "team" }
-        : {
-          message: newMessage,
-          type: "private",
-          receiverId: selectedUser._id,
-          receiverName: selectedUser.name
-        };
+ const handleSendMessage = async () => {
+  if (!newMessage.trim()) return;
+  try {
+    setSending(true);
+    const payload = activeTab === "team"
+      ? { message: newMessage, type: "team" }
+      : {
+        message: newMessage,
+        type: "private",
+        receiverId: selectedUser._id,
+        receiverName: selectedUser.name
+      };
 
-      const { data } = await API.post("/chat/send", payload);
+    const { data } = await API.post("/chat/send", payload);
 
-      setMessages(prev => [...prev, data]);
-      setNewMessage("");
+    // ✅ নিজের message তাৎক্ষণিক দেখান
+    setMessages(prev => [...prev, data]);
+    setNewMessage("");
 
-      // ✅ Socket দিয়ে পাঠান
-      if (activeTab === "team") {
-        socket?.emit("team_message", { message: data });
-      } else {
-        socket?.emit("private_message", {
-          receiverId: selectedUser._id,
-          message: data
-        });
-      }
-
-      // ✅ Typing বন্ধ করুন
-      if (activeTab === "private" && selectedUser) {
-        socket?.emit("typing", {
-          receiverId: selectedUser._id,
-          senderId: user._id,
-          senderName: user.name,
-          isTyping: false
-        });
-      }
-    } catch (error) {
-      toast.error("Message পাঠানো ব্যর্থ!");
-    } finally {
-      setSending(false);
+    if (activeTab === "team") {
+      socket?.emit("team_message", { message: data });
+    } else {
+      // ✅ Receiver এর _id String এ convert করুন
+      socket?.emit("private_message", {
+        receiverId: selectedUser._id.toString(),
+        message: data
+      });
     }
-  };
+  } catch (error) {
+    toast.error("Message পাঠানো ব্যর্থ!");
+  } finally {
+    setSending(false);
+  }
+};
 
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
