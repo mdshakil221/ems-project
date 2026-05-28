@@ -257,6 +257,45 @@ export default function ChatPage() {
     }
   };
 
+  const handleDeleteForMe = async (messageId) => {
+    try {
+
+      await API.put(`/chat/delete-for-me/${messageId}`);
+
+      setMessages(prev =>
+        prev.filter(msg => msg._id !== messageId)
+      );
+
+      toast.success("Message deleted");
+
+    } catch (error) {
+      toast.error("Delete failed");
+    }
+  };
+
+  const handleDeleteForEveryone = async (messageId) => {
+    try {
+
+      await API.put(`/chat/delete-for-everyone/${messageId}`);
+
+      setMessages(prev =>
+        prev.map(msg =>
+          msg._id === messageId
+            ? {
+              ...msg,
+              isDeletedForEveryone: true
+            }
+            : msg
+        )
+      );
+
+      toast.success("Message deleted for everyone");
+
+    } catch (error) {
+      toast.error("Delete failed");
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "calc(100vh - 120px)", gap: "0" }}>
 
@@ -468,6 +507,41 @@ export default function ChatPage() {
                     maxWidth: "300px"
                   }}>
 
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      marginBottom: "4px"
+                    }}>
+                      <button
+                        onClick={() => handleDeleteForMe(msg._id)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "#94a3b8",
+                          cursor: "pointer",
+                          fontSize: "11px",
+                          marginRight: "6px"
+                        }}
+                      >
+                        Delete For Me
+                      </button>
+
+                      {isMe && (
+                        <button
+                          onClick={() => handleDeleteForEveryone(msg._id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            fontSize: "11px"
+                          }}
+                        >
+                          Delete For Everyone
+                        </button>
+                      )}
+                    </div>
+
                     {/* ✅ Attachment */}
                     {msg.attachment && (
                       <div style={{ marginBottom: msg.message ? "8px" : "0" }}>
@@ -521,12 +595,31 @@ export default function ChatPage() {
                     )}
 
                     {/* Message Text */}
-                    {msg.message && (
+                    {msg.isDeletedForEveryone ? (
+
                       <p style={{
-                        color: isMe ? "white" : "#f1f5f9",
-                        fontSize: "14px", lineHeight: "1.5",
-                        wordBreak: "break-word"
-                      }}>{msg.message}</p>
+                        color: "#94a3b8",
+                        fontStyle: "italic",
+                        fontSize: "13px"
+                      }}>
+                        🚫 This message was deleted
+                      </p>
+
+                    ) : (
+
+                      <>
+                        {msg.message && (
+                          <p style={{
+                            color: isMe ? "white" : "#f1f5f9",
+                            fontSize: "14px",
+                            lineHeight: "1.5",
+                            wordBreak: "break-word"
+                          }}>
+                            {msg.message}
+                          </p>
+                        )}
+                      </>
+
                     )}
                   </div>
 

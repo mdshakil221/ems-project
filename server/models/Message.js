@@ -16,6 +16,20 @@ const messageSchema = new mongoose.Schema({
     originalName: { type: String },
     fileType: { type: String }, // image | pdf | doc | other
     size: { type: Number }
+  },
+  // ✅ NEW
+  deletedFor: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }],
+
+  isDeletedForEveryone: {
+    type: Boolean,
+    default: false
+  },
+
+  deletedAt: {
+    type: Date
   }
 }, { timestamps: true });
 

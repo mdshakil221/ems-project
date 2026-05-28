@@ -1,7 +1,8 @@
 import express from "express";
 import {
   getPrivateMessages, getTeamMessages,
-  sendMessage, markMessagesRead, getUnreadCount
+  sendMessage, markMessagesRead, getUnreadCount, deleteMessageForMe,
+  deleteMessageForEveryone
 } from "../controllers/chatController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { upload } from "../config/cloudinary.js";
@@ -19,5 +20,16 @@ router.post(
 );
 router.put("/read/:userId", protect, markMessagesRead);
 router.get("/unread", protect, getUnreadCount);
+router.put(
+  "/delete-for-me/:messageId",
+  protect,
+  deleteMessageForMe
+);
+
+router.put(
+  "/delete-for-everyone/:messageId",
+  protect,
+  deleteMessageForEveryone
+);
 
 export default router;

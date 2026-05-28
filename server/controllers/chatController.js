@@ -6,11 +6,26 @@ export const getPrivateMessages = async (req, res) => {
   try {
     const { userId } = req.params;
     const messages = await Message.find({
+
+      isDeletedForEveryone: false,
+
+      deletedFor: {
+        $ne: req.user._id
+      },
+
       type: "private",
+
       $or: [
-        { senderId: req.user._id, receiverId: userId },
-        { senderId: userId, receiverId: req.user._id }
+        {
+          senderId: req.user._id,
+          receiverId: userId
+        },
+        {
+          senderId: userId,
+          receiverId: req.user._id
+        }
       ]
+
     }).sort({ createdAt: 1 }).limit(100);
     res.json(messages);
   } catch (error) {
@@ -21,7 +36,17 @@ export const getPrivateMessages = async (req, res) => {
 // Team Messages দেখুন
 export const getTeamMessages = async (req, res) => {
   try {
-    const messages = await Message.find({ type: "team" })
+    const messages = await Message.find({
+
+      type: "team",
+
+      isDeletedForEveryone: false,
+
+      deletedFor: {
+        $ne: req.user._id
+      }
+
+    })
       .sort({ createdAt: 1 }).limit(100);
     res.json(messages);
   } catch (error) {
@@ -126,5 +151,83 @@ export const getUnreadCount = async (req, res) => {
     res.json(counts);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteMessageForMe = async (req, res) => {
+  try {
+
+    const { messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({
+        message: "Message not found"
+      });
+    }
+
+    if (!message.deletedFor.includes(req.user._id)) {
+      message.deletedFor.push(req.user._id);
+    }
+
+    await message.save();
+
+    res.json({
+      success: true,
+      message: "Message deleted for you"
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+export const deleteMessageForEveryone = async (req, res) => {
+  try {
+
+    const { messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({
+        message: "Message not found"
+      });
+    }
+
+    // ✅ Only sender can delete
+    if (message.senderId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "Not authorized"
+      });
+    }
+
+    // ✅ Delete Cloudinary file
+    if (message.attachment?.publicId) {
+      await cloudinary.uploader.destroy(
+        message.attachment.publicId,
+        {
+          resource_type: "auto"
+        }
+      );
+    }
+
+    message.isDeletedForEveryone = true;
+    message.deletedAt = new Date();
+
+    await message.save();
+
+    res.json({
+      success: true,
+      message: "Message deleted for everyone"
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
   }
 };
