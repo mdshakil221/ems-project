@@ -147,7 +147,7 @@ export default function AttendancePage() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#0f172a" }}>
-              {["কর্মী", "বিভাগ", "চেক ইন", "অবস্থা", "চিহ্নিত করুন"].map(h => (
+              {["কর্মী", "বিভাগ", "চেক ইন", "চেক আউট", "অবস্থা", "চিহ্নিত করুন"].map(h => (
                 <th key={h} style={{ padding: "14px 16px", color: "#94a3b8", fontSize: "13px", textAlign: "left", fontWeight: "600" }}>{h}</th>
               ))}
             </tr>
@@ -175,6 +175,9 @@ export default function AttendancePage() {
                   </td>
                   <td style={{ padding: "14px 16px", color: "#94a3b8", fontSize: "14px" }}>{emp.department}</td>
                   <td style={{ padding: "14px 16px", color: "#94a3b8", fontSize: "14px" }}>{checkIn || "—"}</td>
+                  <td style={{ padding: "14px 16px", color: "#94a3b8", fontSize: "14px" }}>
+                    {attendance.find(a => a.employeeId === emp._id)?.checkOut || "—"}
+                  </td>
                   <td style={{ padding: "14px 16px" }}>
                     {status ? (
                       <span style={{
